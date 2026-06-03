@@ -1,0 +1,427 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================
+   CSS DESIGN TOKEN SYSTEM — NICHE RADAR
+   Light + Dark Modes with Claymorphic Variables
+   ============================================= */
+
+:root {
+  /* Background Layers */
+  --bg-root: #FFFFFF;
+  --bg-panel: #F9F9F9;
+  --bg-surface: #F2F2F2;
+  --bg-elevated: #EBEBEB;
+  --bg-input: #FFFFFF;
+
+  /* Border */
+  --border-subtle: #E5E5E5;
+  --border-default: #D4D4D4;
+  --border-strong: #B8B8B8;
+
+  /* Text */
+  --text-primary: #0F0F0F;
+  --text-secondary: #606060;
+  --text-tertiary: #909090;
+  --text-inverse: #FFFFFF;
+  --text-accent: #FF0000;
+
+  /* YouTube Accent */
+  --yt-red: #FF0000;
+  --yt-red-hover: #CC0000;
+  --yt-red-muted: rgba(255, 0, 0, 0.08);
+
+  /* Mint Active State */
+  --mint-start: #C6F6E4;
+  --mint-mid: #9AEFD0;
+  --mint-end: #6DE8BB;
+  --mint-text: #0D7A54;
+
+  /* 3D Claymorphic Shadows — LIGHT */
+  --shadow-clay-sm: 4px 4px 8px rgba(0,0,0,0.10), -2px -2px 6px rgba(255,255,255,0.85);
+  --shadow-clay: 6px 6px 14px rgba(0,0,0,0.13), -3px -3px 10px rgba(255,255,255,0.90);
+  --shadow-clay-lg: 10px 10px 22px rgba(0,0,0,0.16), -5px -5px 14px rgba(255,255,255,0.92);
+  --shadow-inset: inset 3px 3px 7px rgba(0,0,0,0.09), inset -2px -2px 5px rgba(255,255,255,0.85);
+  --shadow-inset-input: inset 2px 2px 5px rgba(0,0,0,0.08), inset -1px -1px 3px rgba(255,255,255,0.9);
+  --shadow-pill-active: 0 4px 18px rgba(34,199,138,0.28), inset 2px 2px 5px rgba(255,255,255,0.7), inset -1px -1px 3px rgba(0,0,0,0.04);
+  --shadow-red: 6px 6px 16px rgba(255,0,0,0.22), -3px -3px 10px rgba(255,255,255,0.88);
+
+  /* Radius */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 9999px;
+
+  /* Transition */
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  /* Background Layers */
+  --bg-root: #0F0F0F;
+  --bg-panel: #1F1F1F;
+  --bg-surface: #282828;
+  --bg-elevated: #3A3A3A;
+  --bg-input: #2A2A2A;
+
+  /* Border */
+  --border-subtle: #2D2D2D;
+  --border-default: #383838;
+  --border-strong: #505050;
+
+  /* Text */
+  --text-primary: #F1F1F1;
+  --text-secondary: #AAAAAA;
+  --text-tertiary: #717171;
+  --text-inverse: #0F0F0F;
+  --text-accent: #FF0000;
+
+  /* YouTube Accent */
+  --yt-red: #FF0000;
+  --yt-red-hover: #FF3333;
+  --yt-red-muted: rgba(255, 0, 0, 0.12);
+
+  /* Mint Active State */
+  --mint-start: rgba(34,199,138,0.18);
+  --mint-mid: rgba(34,199,138,0.12);
+  --mint-end: rgba(34,199,138,0.08);
+  --mint-text: #40E0A5;
+
+  /* 3D Claymorphic Shadows — DARK */
+  --shadow-clay-sm: 4px 4px 8px rgba(0,0,0,0.55), -2px -2px 6px rgba(255,255,255,0.04);
+  --shadow-clay: 6px 6px 14px rgba(0,0,0,0.65), -3px -3px 10px rgba(255,255,255,0.05), inset 2px 2px 4px rgba(255,255,255,0.04);
+  --shadow-clay-lg: 10px 10px 24px rgba(0,0,0,0.75), -4px -4px 12px rgba(255,255,255,0.04), inset 3px 3px 8px rgba(255,255,255,0.04);
+  --shadow-inset: inset 4px 4px 10px rgba(0,0,0,0.6), inset -2px -2px 6px rgba(255,255,255,0.04);
+  --shadow-inset-input: inset 3px 3px 7px rgba(0,0,0,0.55), inset -1px -1px 3px rgba(255,255,255,0.04);
+  --shadow-pill-active: 0 4px 22px rgba(34,199,138,0.22), inset 2px 2px 4px rgba(255,255,255,0.07), inset -2px -2px 6px rgba(0,0,0,0.45);
+  --shadow-red: 6px 6px 18px rgba(255,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.04);
+}
+
+/* =============================================
+   BASE RESETS
+   ============================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-root);
+  color: var(--text-primary);
+  transition: background-color var(--transition-slow), color var(--transition-slow);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =============================================
+   COMPONENT UTILITIES
+   ============================================= */
+
+@layer components {
+
+  /* Clay Panel — Base */
+  .clay-panel {
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-clay);
+    border: 1px solid var(--border-subtle);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  }
+
+  .clay-panel:hover {
+    box-shadow: var(--shadow-clay-lg);
+  }
+
+  .clay-panel-lg {
+    background: var(--bg-panel);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-clay-lg);
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* Clay Input */
+  .clay-input {
+    background: var(--bg-input);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-inset-input);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    transition: all var(--transition-base);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .clay-input:focus {
+    outline: none;
+    border-color: var(--yt-red);
+    box-shadow: var(--shadow-inset-input), 0 0 0 2px rgba(255, 0, 0, 0.15);
+  }
+
+  .clay-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  /* Clay Button — Red */
+  .clay-btn-red {
+    background: linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-red);
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .clay-btn-red::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 45%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
+    border-radius: var(--radius-pill) var(--radius-pill) 0 0;
+    pointer-events: none;
+  }
+
+  .clay-btn-red:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-red), 0 4px 12px rgba(255,0,0,0.3);
+  }
+
+  .clay-btn-red:active {
+    transform: translateY(0);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2);
+  }
+
+  /* Clay Button — Secondary */
+  .clay-btn-secondary {
+    background: var(--bg-surface);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-clay-sm);
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-base);
+  }
+
+  .clay-btn-secondary:hover {
+    box-shadow: var(--shadow-clay);
+    transform: translateY(-1px);
+  }
+
+  .clay-btn-secondary:active {
+    box-shadow: var(--shadow-inset);
+    transform: translateY(0);
+  }
+
+  /* Pill Active (Mint) */
+  .pill-active {
+    background: linear-gradient(135deg, var(--mint-start) 0%, var(--mint-mid) 50%, var(--mint-end) 100%);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-pill-active);
+    color: var(--mint-text);
+    font-weight: 600;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pill-active::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.35), transparent);
+    border-radius: var(--radius-pill) var(--radius-pill) 0 0;
+    pointer-events: none;
+  }
+
+  /* Pill Inactive */
+  .pill-inactive {
+    background: transparent;
+    border-radius: var(--radius-pill);
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all var(--transition-base);
+    cursor: pointer;
+  }
+
+  .pill-inactive:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-clay-sm);
+  }
+
+  /* Sidebar Nav Item */
+  .nav-item-active {
+    background: var(--yt-red-muted);
+    border-radius: var(--radius-sm);
+    color: var(--yt-red);
+    font-weight: 600;
+    box-shadow: inset 2px 2px 4px rgba(255,0,0,0.08);
+  }
+
+  .nav-item {
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+    cursor: pointer;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-clay-sm);
+  }
+
+  /* Scrollbar */
+  .custom-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: var(--radius-pill);
+  }
+
+  .custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+  }
+
+  /* Tag */
+  .clay-tag {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-clay-sm);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    transition: all var(--transition-base);
+  }
+
+  .clay-tag-red {
+    background: var(--yt-red-muted);
+    border: 1px solid rgba(255,0,0,0.15);
+    border-radius: var(--radius-pill);
+    color: var(--yt-red);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+  }
+
+  .clay-tag-mint {
+    background: linear-gradient(135deg, var(--mint-start), var(--mint-mid));
+    border: 1px solid rgba(34,199,138,0.2);
+    border-radius: var(--radius-pill);
+    color: var(--mint-text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    box-shadow: var(--shadow-pill-active);
+  }
+
+  /* Divider */
+  .clay-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-default), transparent);
+    opacity: 0.8;
+  }
+
+  /* Stat Card */
+  .stat-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-clay);
+    border: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    transition: all var(--transition-base);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-clay-lg);
+    transform: translateY(-2px);
+  }
+}
+
+/* =============================================
+   ANIMATIONS
+   ============================================= */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,0,0,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(255,0,0,0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-slide-up { animation: slideUp 0.35s ease-out; }
+.animate-pulse-red { animation: pulseRed 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Shimmer Skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 0%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* =============================================
+   THEME TRANSITION
+   ============================================= */
+
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, box-shadow, color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Exclude transitions on interactive elements to avoid lag */
+button, a, input, textarea, select {
+  transition-property: background-color, border-color, box-shadow, color, transform, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
