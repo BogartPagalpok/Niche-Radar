@@ -266,23 +266,29 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
 
 async function fetchWithProxy(url: string): Promise<string> {
   const proxyFactories = [
+    (target: string) => `https://thingproxy.freeboard.io/fetch/${target}`,
+    (target: string) => `https://cors-anywhere.azm.workers.dev/${target}`,
     (target: string) => `https://api.codetabs.com/v1/proxy/?url=${encodeURIComponent(target)}`,
-    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
-    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`
   ];
 
   for (const createProxyUrl of proxyFactories) {
     try {
-      const response = await fetch(createProxyUrl(url), { method: 'GET' });
+      const response = await fetch(createProxyUrl(url), { 
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
       if (response.ok) {
         return await response.text();
       }
-      console.warn(`Proxy base endpoint returned non-200 status: ${response.status}. Rotating node...`);
+      console.warn(`Proxy base endpoint returned status: ${response.status}. Rotating node...`);
     } catch (error) {
-      console.warn('Proxy attempt encountered network error, attempting pool rotation...', error);
+      console.warn('Proxy attempt encountered network error, rotating proxy node...', error);
     }
   }
-  throw new Error('All configured public CORS proxy pool endpoints returned 403 Forbidden or failed connection parameters.');
+  throw new Error('All configured public CORS proxies are currently rate-limited or blocking YouTube layout components.');
 }
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
@@ -294,7 +300,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
 
       htmlContent = await fetchWithProxy(searchUrl);
 
-      const match = htmlContent.match(/var ytInitialData\s*=\s*({.*?})/);
+      const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
       if (!match || !match[1]) {
         return {
           videos: [],
@@ -331,21 +337,22 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
-      const proxyFactories = [
-        (target: string) => `https://api.codetabs.com/v1/proxy/?url=${encodeURIComponent(target)}`,
-        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
-        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+      const postProxyFactories = [
+        (target: string) => `https://thingproxy.freeboard.io/fetch/${target}`,
+        (target: string) => `https://cors-anywhere.azm.workers.dev/${target}`,
+        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`
       ];
 
       let data: any = null;
       let success = false;
 
-      for (const createProxyUrl of proxyFactories) {
+      for (const createProxyUrl of postProxyFactories) {
         try {
           const response = await fetch(createProxyUrl(continuationUrl), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify(requestBody),
           });
