@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
-import { type ExtractedVideo, searchYouTubeVideos, generateMockSearchResults } from '../services/youtubeScraper';
+import { type ExtractedVideo, searchYouTubeVideos } from '../services/youtubeScraper';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { VideoCard } from './VideoCard';
 import { useVideoContext } from '../context/VideoContext';
@@ -17,7 +17,7 @@ interface SearchState {
 }
 
 export default function NicheSearch(): React.ReactElement {
-  const { selectedVideo } = useVideoContext();
+  const { selectedVideo, setSearchedVideos } = useVideoContext();
   const { isDark } = useTheme();
   const [state, setState] = useState<SearchState>({
     query: '',
@@ -43,14 +43,9 @@ export default function NicheSearch(): React.ReactElement {
 
       try {
         const result = await searchYouTubeVideos(query, continuation);
+        const parsedVideos = result.videos;
 
-        let videos = result.videos;
-
-        if (videos.length === 0 && isInitialSearch) {
-          videos = generateMockSearchResults(query);
-        }
-
-        if (videos.length === 0 && isInitialSearch) {
+        if (parsedVideos.length === 0 && isInitialSearch) {
           setState(prev => ({
             ...prev,
             isLoading: false,
@@ -58,37 +53,38 @@ export default function NicheSearch(): React.ReactElement {
             error: 'No videos found. Try a different search term.',
             videos: [],
           }));
+          setSearchedVideos([]);
           return;
         }
 
-        setState(prev => ({
-          ...prev,
-          videos: isInitialSearch ? videos : [...prev.videos, ...videos],
-          continuation: result.continuation,
-          isLoading: false,
-          isLoadingMore: false,
-          hasSearched: true,
-          query: query,
-        }));
+        setState(prev => {
+          const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
+          
+          setTimeout(() => setSearchedVideos(totalVideos), 0);
+
+          return {
+            ...prev,
+            videos: totalVideos,
+            continuation: result.continuation,
+            isLoading: false,
+            isLoadingMore: false,
+            hasSearched: true,
+            query: query,
+          };
+        });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Search failed. Please try again.';
 
-        let videos: ExtractedVideo[] = [];
-        if (isInitialSearch) {
-          videos = generateMockSearchResults(state.query);
-        }
-
         setState(prev => ({
           ...prev,
           isLoading: false,
           isLoadingMore: false,
-          error: videos.length > 0 ? null : errorMessage,
+          error: errorMessage,
           hasSearched: true,
-          videos: isInitialSearch && videos.length > 0 ? videos : prev.videos,
         }));
       }
     },
-    [state.query]
+    [setSearchedVideos]
   );
 
   const handleSearch = useCallback((): void => {
