@@ -440,6 +440,5 @@ export function generateMockSearchResults(query: string): ExtractedVideo[] {
       channel_id: 'UCFKDEp9si4RmHvPf5kK17Qw',
     },
   ];
-
   return mockVideos;
 }
