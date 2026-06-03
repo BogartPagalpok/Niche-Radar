@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Copy, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
-import { generateThumbnailPrompt, isGeneratorError, type GeminiThumbnailResponse } from '../services/geminiService';
+import { Copy, CheckCircle2, Loader2, AlertCircle, Play } from 'lucide-react';
+import { generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
 interface ThumbnailPromptGeneratorProps {
@@ -17,36 +17,42 @@ interface ThumbnailState {
 export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProps): React.ReactElement {
   const [state, setState] = useState<ThumbnailState>({
     prompt: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
     copied: false,
   });
 
   useEffect(() => {
-    const generate = async (): Promise<void> => {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-      const result = await generateThumbnailPrompt(video);
-
-      if (isGeneratorError(result)) {
-        setState({
-          prompt: null,
-          isLoading: false,
-          error: result.message,
-          copied: false,
-        });
-      } else {
-        setState({
-          prompt: result.prompt,
-          isLoading: false,
-          error: null,
-          copied: false,
-        });
-      }
-    };
-
-    generate();
+    // Structural architectural enforcement: On-demand ONLY. Clear state on video context switch.
+    setState({
+      prompt: null,
+      isLoading: false,
+      error: null,
+      copied: false,
+    });
   }, [video.video_id]);
+
+  const handleGenerateThumbnail = async (): Promise<void> => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    const result = await generateThumbnailPrompt(video);
+
+    if (isGeneratorError(result)) {
+      setState({
+        prompt: null,
+        isLoading: false,
+        error: result.message,
+        copied: false,
+      });
+    } else {
+      setState({
+        prompt: result.prompt,
+        isLoading: false,
+        error: null,
+        copied: false,
+      });
+    }
+  };
 
   const handleCopy = (): void => {
     if (state.prompt) {
@@ -106,6 +112,38 @@ export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProp
         )}
       </div>
 
+      {!state.prompt && !state.isLoading && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-inset)',
+            border: '1px solid var(--border-subtle)',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '10px',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            Visual Concept Lock
+          </p>
+          <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-tertiary)', maxWidth: '280px', lineHeight: 1.4 }}>
+            Click below to forward this record's visual variables to Gemini 2.5 and generate a highly optimized Midjourney artwork prompt layout.
+          </p>
+          <button
+            onClick={handleGenerateThumbnail}
+            className="clay-btn-secondary flex items-center gap-1.5 px-4 py-2"
+            style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '2px' }}
+          >
+            <Play size={10} strokeWidth={3} fill="currentColor" />
+            Generate Thumbnail Prompt
+          </button>
+        </div>
+      )}
+
       {state.isLoading && (
         <div
           style={{
@@ -127,7 +165,7 @@ export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProp
             style={{ animation: 'spin 0.7s linear infinite' }}
           />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            Generating thumbnail prompt…
+            Querying Gemini models & engineering thumbnail art structure…
           </span>
         </div>
       )}
