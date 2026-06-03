@@ -15,33 +15,38 @@ interface MetricsState {
 export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactElement {
   const [state, setState] = useState<MetricsState>({
     metrics: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
   });
 
   useEffect(() => {
-    const loadMetrics = async (): Promise<void> => {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-      const result = await fetchYouTubeMetrics(videoId);
-
-      if (isMetricsError(result)) {
-        setState({
-          metrics: null,
-          isLoading: false,
-          error: result.message,
-        });
-      } else {
-        setState({
-          metrics: result,
-          isLoading: false,
-          error: null,
-        });
-      }
-    };
-
-    loadMetrics();
+    // Structural architectural enforcement: Do not automatically execute on initial mounting/look-up
+    setState({
+      metrics: null,
+      isLoading: false,
+      error: null,
+    });
   }, [videoId]);
+
+  const handleFetchPrivateMetrics = async (): Promise<void> => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    const result = await fetchYouTubeMetrics(videoId);
+
+    if (isMetricsError(result)) {
+      setState({
+        metrics: null,
+        isLoading: false,
+        error: result.message,
+      });
+    } else {
+      setState({
+        metrics: result,
+        isLoading: false,
+        error: null,
+      });
+    }
+  };
 
   if (state.isLoading) {
     return (
@@ -51,10 +56,11 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
           alignItems: 'center',
           justifyContent: 'center',
           gap: '8px',
-          padding: '24px',
+          padding: '32px',
           borderRadius: 'var(--radius-md)',
           background: 'var(--bg-surface)',
           boxShadow: 'var(--shadow-clay-sm)',
+          border: '1px solid var(--border-subtle)',
         }}
       >
         <Loader2
@@ -63,8 +69,8 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
           color="var(--yt-red)"
           style={{ animation: 'spin 0.7s linear infinite' }}
         />
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-          Loading metrics…
+        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          Authenticating API token & requesting channel analytics ledger...
         </span>
       </div>
     );
@@ -72,34 +78,68 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
 
   if (state.error) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '10px',
-          background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          borderRadius: 'var(--radius-md)',
-          padding: '12px 14px',
-        }}
-      >
-        <AlertCircle
-          size={14}
-          strokeWidth={2.5}
-          color="#DC2626"
-          style={{ flexShrink: 0, marginTop: '1px' }}
-        />
-        <p style={{ margin: 0, fontSize: '0.75rem', color: '#991B1B', lineHeight: 1.5 }}>
-          {state.error}
-        </p>
+      <div className="space-y-3">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            background: 'rgba(239,68,68,0.08)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: 'var(--radius-md)',
+            padding: '12px 14px',
+          }}
+        >
+          <AlertCircle
+            size={14}
+            strokeWidth={2.5}
+            color="#DC2626"
+            style={{ flexShrink: 0, marginTop: '1px' }}
+          />
+          <p style={{ margin: 0, fontSize: '0.75rem', color: '#991B1B', lineHeight: 1.5 }}>
+            {state.error}
+          </p>
+        </div>
+        <button
+          onClick={handleFetchPrivateMetrics}
+          className="clay-btn-secondary w-full py-2"
+          style={{ fontSize: '0.75rem', fontWeight: 700 }}
+        >
+          Retry Authenticated Request
+        </button>
       </div>
     );
   }
 
   if (!state.metrics) {
     return (
-      <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', padding: '20px' }}>
-        No metrics available
+      <div
+        style={{
+          background: 'var(--bg-panel)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-clay)',
+          border: '1px solid var(--border-subtle)',
+          padding: '20px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '10px',
+        }}
+      >
+        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          Private API Metrics Protected
+        </p>
+        <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-tertiary)', maxWidth: '280px', lineHeight: 1.4 }}>
+          This operation requires your connected OAuth client access credentials to poll performance logs directly from YouTube Analytics.
+        </p>
+        <button
+          onClick={handleFetchPrivateMetrics}
+          className="clay-btn-red py-2 px-5"
+          style={{ fontSize: '0.75rem', fontWeight: 700, marginTop: '2px' }}
+        >
+          Unlock Monetization Data
+        </button>
       </div>
     );
   }
