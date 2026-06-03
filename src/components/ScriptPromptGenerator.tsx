@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Copy, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
-import { generateScriptPrompt, isGeneratorError, type GeminiScriptResponse } from '../services/geminiService';
+import { Copy, CheckCircle2, Loader2, AlertCircle, Play } from 'lucide-react';
+import { generateScriptPrompt, isGeneratorError } from '../services/geminiService';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
 interface ScriptPromptGeneratorProps {
@@ -17,36 +17,42 @@ interface ScriptState {
 export function ScriptPromptGenerator({ video }: ScriptPromptGeneratorProps): React.ReactElement {
   const [state, setState] = useState<ScriptState>({
     script: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
     copied: false,
   });
 
   useEffect(() => {
-    const generate = async (): Promise<void> => {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-      const result = await generateScriptPrompt(video);
-
-      if (isGeneratorError(result)) {
-        setState({
-          script: null,
-          isLoading: false,
-          error: result.message,
-          copied: false,
-        });
-      } else {
-        setState({
-          script: result.script,
-          isLoading: false,
-          error: null,
-          copied: false,
-        });
-      }
-    };
-
-    generate();
+    // Structural architectural enforcement: On-demand ONLY. Clear state on video context switch.
+    setState({
+      script: null,
+      isLoading: false,
+      error: null,
+      copied: false,
+    });
   }, [video.video_id]);
+
+  const handleGenerateScript = async (): Promise<void> => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    const result = await generateScriptPrompt(video);
+
+    if (isGeneratorError(result)) {
+      setState({
+        script: null,
+        isLoading: false,
+        error: result.message,
+        copied: false,
+      });
+    } else {
+      setState({
+        script: result.script,
+        isLoading: false,
+        error: null,
+        copied: false,
+      });
+    }
+  };
 
   const handleCopy = (): void => {
     if (state.script) {
@@ -106,6 +112,38 @@ export function ScriptPromptGenerator({ video }: ScriptPromptGeneratorProps): Re
         )}
       </div>
 
+      {!state.script && !state.isLoading && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-inset)',
+            border: '1px solid var(--border-subtle)',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '10px',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            Script Breakdown Token Locked
+          </p>
+          <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-tertiary)', maxWidth: '280px', lineHeight: 1.4 }}>
+            Click below to transmit this video's metadata structure to Gemini 2.5 and synthesize an AI replication script payload.
+          </p>
+          <button
+            onClick={handleGenerateScript}
+            className="clay-btn-secondary flex items-center gap-1.5 px-4 py-2"
+            style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '2px' }}
+          >
+            <Play size={10} strokeWidth={3} fill="currentColor" />
+            Generate Script Blueprint
+          </button>
+        </div>
+      )}
+
       {state.isLoading && (
         <div
           style={{
@@ -127,7 +165,7 @@ export function ScriptPromptGenerator({ video }: ScriptPromptGeneratorProps): Re
             style={{ animation: 'spin 0.7s linear infinite' }}
           />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            Generating script…
+            Querying Gemini models & engineering content prompt layout…
           </span>
         </div>
       )}
