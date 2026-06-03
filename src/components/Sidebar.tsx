@@ -1,4 +1,3 @@
-```tsx
 import {
   TrendingUp,
   Search,
@@ -420,5 +419,3 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
     </aside>
   );
 }
-
-```
