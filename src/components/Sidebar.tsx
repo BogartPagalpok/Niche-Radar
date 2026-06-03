@@ -195,9 +195,9 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                       className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.99] group text-left"
                       style={{
                         background: isActive
-                          ? 'linear-gradient(135deg, rgba(255,51,51,0.1), rgba(255,0,0,0.04))'
+                          ? 'linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,0,0,0.08))'
                           : 'transparent',
-                        border: isActive ? '1px solid rgba(255,51,51,0.18)' : '1px solid transparent',
+                        border: isActive ? '1px solid rgba(255,51,51,0.25)' : '1px solid transparent',
                         boxShadow: isActive ? 'var(--shadow-clay-sm)' : 'none',
                         cursor: 'pointer',
                       }}
