@@ -265,35 +265,24 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
 }
 
 async function fetchWithProxy(url: string): Promise<string> {
-  // Strategy 1: AllOrigins JSON Envelope. Bypasses text headers entirely by serving HTML text compiled within a JSON payload wrapper.
-  try {
-    const jsonProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const response = await fetch(jsonProxyUrl);
-    if (response.ok) {
-      const json = await response.json();
-      if (json.contents) return json.contents;
-    }
-  } catch (err) {
-    console.warn('AllOrigins JSON envelope processing failed, moving down the rotation matrix...', err);
-  }
-
-  // Strategy 2: Direct simple pass-through strings. Explicitly dropped custom parameters to guarantee no OPTIONS preflight failures.
-  const passThroughFactories = [
-    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
-    (target: string) => `https://api.codetabs.com/v1/proxy/?url=${encodeURIComponent(target)}`
+  const proxyFactories = [
+    (target: string) => `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(target)}`
   ];
 
-  for (const createProxyUrl of passThroughFactories) {
+  for (const createProxyUrl of proxyFactories) {
     try {
       const response = await fetch(createProxyUrl(url), { method: 'GET' });
       if (response.ok) {
         return await response.text();
       }
+      console.warn(`Proxy endpoint returned non-200 status: ${response.status}. Rotating pool node...`);
     } catch (error) {
-      console.warn('Simple text query dropped down pool line matrix...', error);
+      console.warn('Proxy query failed network protocol constraints, checking next configuration entry...', error);
     }
   }
-  throw new Error('All network proxies rejected browser layout data metrics requests.');
+  throw new Error('All configured public CORS proxies are currently rate-limited or blocking YouTube layout components.');
 }
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
@@ -343,7 +332,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
       };
 
       const postProxyFactories = [
-        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+        (target: string) => `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
         (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
       ];
 
