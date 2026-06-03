@@ -1,3 +1,4 @@
+```tsx
 import {
   TrendingUp,
   Search,
@@ -62,19 +63,18 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
 
   return (
     <aside
-      className="w-full h-16 lg:w-64 lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
+      className="w-full h-16 lg:w-64 lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10 border-t lg:border-t-0 lg:border-r"
       style={{
         background: 'var(--bg-panel)',
-        borderTop: '1px solid var(--border-subtle)',
-        borderRight: '0px',
-        borderBottom: '0px',
+        borderColor: 'var(--border-subtle)',
+        boxSizing: 'border-box',
         boxShadow: isDark
-          ? 'inset 0 4px 20px rgba(0,0,0,0.4)'
-          : 'inset 0 4px 16px rgba(0,0,0,0.06)',
+          ? 'inset -4px 0 20px rgba(0,0,0,0.2)'
+          : 'inset -4px 0 16px rgba(0,0,0,0.02)',
       }}
     >
       {/* MOBILE BOTTOM NAV - Horizontal on small screens */}
-      <div className="flex lg:hidden w-full h-16 flex-row items-center justify-between px-2 gap-0 overflow-x-auto">
+      <div className="flex lg:hidden w-full h-16 flex-row items-center justify-between px-4 gap-0 overflow-x-auto box-border">
         {allNavItems.map(item => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
@@ -85,8 +85,8 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
               onClick={() => onNavigate(item.id)}
               className="flex flex-col items-center justify-center gap-0 flex-shrink-0"
               style={{
-                width: '56px',
-                height: '56px',
+                width: '48px',
+                height: '48px',
                 background: isActive
                   ? 'linear-gradient(135deg, rgba(255,51,51,0.2), rgba(255,0,0,0.1))'
                   : 'transparent',
@@ -98,6 +98,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxSizing: 'border-box',
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement;
@@ -128,7 +129,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
         })}
 
         {/* Theme Toggle - Mobile */}
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <button
             onClick={toggleTheme}
             className="flex items-center justify-center flex-shrink-0"
@@ -143,6 +144,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 200ms ease',
+              boxSizing: 'border-box',
             }}
             onMouseEnter={e => {
               const el = e.currentTarget as HTMLElement;
@@ -164,12 +166,14 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
       </div>
 
       {/* DESKTOP SIDEBAR - Vertical on large screens */}
-      <div className="hidden lg:flex flex-col h-full">
-        {/* Logo */}
+      <div className="hidden lg:flex flex-col h-full w-full" style={{ boxSizing: 'border-box' }}>
+        {/* Logo Section */}
         <div
-          className="flex items-center gap-3 px-5 pt-6 pb-5 flex-shrink-0"
+          className="flex items-center gap-3 flex-shrink-0"
           style={{
-            padding: '1.5rem 1.25rem 1.25rem 1.25rem',
+            padding: '1.5rem 1rem 1.5rem 1rem',
+            boxSizing: 'border-box',
+            width: '100%',
           }}
         >
           <div
@@ -190,6 +194,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                 fontWeight: 700,
                 color: 'var(--text-primary)',
                 letterSpacing: '-0.01em',
+                lineHeight: '1.2',
               }}
             >
               Niche Radar
@@ -201,6 +206,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                 fontSize: '0.7rem',
                 color: 'var(--text-tertiary)',
                 fontWeight: 500,
+                lineHeight: '1.2',
               }}
             >
               YouTube Intelligence
@@ -208,22 +214,24 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
           </div>
         </div>
 
-        {/* Navigation sections */}
+        {/* Navigation Sections */}
         <nav
-          className="flex-1 overflow-y-auto px-3 space-y-6"
+          className="flex-1 overflow-y-auto"
           style={{
             flex: 1,
             overflowY: 'auto',
             overflowX: 'hidden',
-            paddingLeft: '0.75rem',
-            paddingRight: '0.75rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '1.5rem',
+            boxSizing: 'border-box',
+            width: '100%',
           }}
         >
           {NAV_SECTIONS.map(section => (
-            <div key={section.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div key={section.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%', boxSizing: 'border-box' }}>
               <p
                 style={{
                   margin: '0px',
@@ -233,6 +241,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                   textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                   paddingLeft: '0.75rem',
+                  marginBottom: '0.25rem',
                 }}
               >
                 {section.label}
@@ -249,7 +258,10 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                     title={item.label}
                     style={{
                       width: '100%',
-                      padding: '0.625rem 0.75rem',
+                      height: '40px',
+                      minHeight: '40px',
+                      boxSizing: 'border-box',
+                      padding: '0rem 0.75rem',
                       background: isActive
                         ? 'linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,0,0,0.08))'
                         : 'transparent',
@@ -292,7 +304,8 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                         minWidth: 0,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        textOverflow: 'ellipsis',
+                        lineHeight: '1',
                       }}
                     >
                       {item.label}
@@ -307,6 +320,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                           fontSize: '0.6rem',
                           fontWeight: 700,
                           flexShrink: 0,
+                          lineHeight: '1',
                         }}
                       >
                         {item.badge}
@@ -319,7 +333,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                         color="var(--yt-red)"
                         style={{
                           flexShrink: 0,
-                          marginLeft: '4px',
+                          marginLeft: '2px',
                         }}
                       />
                     )}
@@ -330,22 +344,27 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
           ))}
         </nav>
 
-        {/* Theme toggle and footer */}
+        {/* Theme Toggle & Footer Section */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
-            padding: '1.25rem',
+            gap: '0.75rem',
+            padding: '1rem 1rem 1.25rem 1rem',
             borderTop: '1px solid var(--border-subtle)',
             flexShrink: 0,
+            boxSizing: 'border-box',
+            width: '100%',
           }}
         >
           <button
             onClick={toggleTheme}
             style={{
               width: '100%',
-              padding: '0.625rem 0.75rem',
+              height: '40px',
+              minHeight: '40px',
+              boxSizing: 'border-box',
+              padding: '0rem 0.75rem',
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
               borderRadius: '10px',
@@ -371,13 +390,13 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
           >
             {isDark ? (
               <>
-                <Sun size={16} strokeWidth={2} color="var(--text-secondary)" />
-                <span>Light Mode</span>
+                <Sun size={16} strokeWidth={2} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, textAlign: 'left', lineHeight: '1' }}>Light Mode</span>
               </>
             ) : (
               <>
-                <Moon size={16} strokeWidth={2} color="var(--text-secondary)" />
-                <span>Dark Mode</span>
+                <Moon size={16} strokeWidth={2} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, textAlign: 'left', lineHeight: '1' }}>Dark Mode</span>
               </>
             )}
           </button>
@@ -388,8 +407,9 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
               color: 'var(--text-tertiary)',
               textAlign: 'center',
               fontWeight: 500,
-              paddingTop: '0.5rem',
-              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: '0.25rem',
+              boxSizing: 'border-box',
+              lineHeight: '1.3',
             }}
           >
             <p style={{ margin: '0px', marginBottom: '2px' }}>Niche Radar v1.0</p>
@@ -400,3 +420,5 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
     </aside>
   );
 }
+
+```
