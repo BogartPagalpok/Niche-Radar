@@ -1,4 +1,4 @@
-import { Clock, Eye, User } from 'lucide-react';
+import { Clock, Eye, User, Bookmark } from 'lucide-react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { useVideoContext } from '../context/VideoContext';
 
@@ -8,10 +8,21 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video, isSelected }: VideoCardProps): React.ReactElement {
-  const { selectVideo } = useVideoContext();
+  const { selectVideo, savedNiches, saveVideoToNiches, removeVideoFromNiches } = useVideoContext();
+
+  const isBookmarked = savedNiches.some(v => v.video_id === video.video_id);
 
   const handleCardClick = (): void => {
     selectVideo(video);
+  };
+
+  const handleBookmarkClick = (e: React.MouseEvent): void => {
+    e.stopPropagation();
+    if (isBookmarked) {
+      removeVideoFromNiches(video.video_id);
+    } else {
+      saveVideoToNiches(video);
+    }
   };
 
   return (
@@ -209,26 +220,45 @@ export function VideoCard({ video, isSelected }: VideoCardProps): React.ReactEle
         )}
       </div>
 
-      {/* Selection indicator */}
-      {isSelected && (
-        <div
+      {/* Actions & Selection Column */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <button
+          onClick={handleBookmarkClick}
           style={{
-            width: '24px',
-            height: '24px',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: isBookmarked ? 'var(--yt-red)' : 'var(--text-tertiary)',
+            padding: '4px',
             borderRadius: '6px',
-            background: 'linear-gradient(135deg, #C6F6E4, #9AEFD0)',
-            boxShadow: 'var(--shadow-pill-active)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0,
+            transition: 'color 150ms ease',
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--mint-text)" strokeWidth="2" strokeLinecap="round">
-            <polyline points="1 6 4 9 11 2" />
-          </svg>
-        </div>
-      )}
+          <Bookmark size={14} fill={isBookmarked ? 'var(--yt-red)' : 'none'} strokeWidth={2.5} />
+        </button>
+
+        {isSelected && (
+          <div
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '6px',
+              background: 'linear-gradient(135deg, #C6F6E4, #9AEFD0)',
+              boxShadow: 'var(--shadow-pill-active)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--mint-text)" strokeWidth="2" strokeLinecap="round">
+              <polyline points="1 6 4 9 11 2" />
+            </svg>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
