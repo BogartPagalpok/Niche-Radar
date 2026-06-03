@@ -62,7 +62,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
 
   return (
     <aside
-      className="w-full h-16 lg:w-64 lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10 border-t lg:border-t-0 lg:border-r"
+      className="w-full h-16 lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
       style={{
         background: 'var(--bg-panel)',
         borderColor: 'var(--border-subtle)',
