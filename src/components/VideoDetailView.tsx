@@ -3,6 +3,7 @@ import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, 
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { useTheme } from '../context/ThemeContext';
+import { useVideoContext } from '../context/VideoContext';
 
 interface VideoDetailViewProps {
   video: ExtractedVideo;
@@ -14,11 +15,22 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const { isDark } = useTheme();
+  const { savedNiches, saveVideoToNiches, removeVideoFromNiches } = useVideoContext();
+
+  const isBookmarked = savedNiches.some(v => v.video_id === video.video_id);
 
   const handleCopy = (text: string, label: string): void => {
     navigator.clipboard.writeText(text);
     setCopied(label);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleSaveToggle = (): void => {
+    if (isBookmarked) {
+      removeVideoFromNiches(video.video_id);
+    } else {
+      saveVideoToNiches(video);
+    }
   };
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
@@ -392,9 +404,12 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
               <Youtube size={14} strokeWidth={2.5} />
               Watch on YouTube
             </a>
-            <button className="clay-btn-secondary flex items-center justify-center gap-2 px-4 py-3 flex-1">
-              <CheckCircle2 size={14} strokeWidth={2.5} />
-              Save Video
+            <button 
+              onClick={handleSaveToggle}
+              className="clay-btn-secondary flex items-center justify-center gap-2 px-4 py-3 flex-1"
+            >
+              <CheckCircle2 size={14} strokeWidth={2.5} color={isBookmarked ? "#22C55E" : "currentColor"} />
+              <span>{isBookmarked ? 'Saved' : 'Save Video'}</span>
             </button>
           </div>
         </div>
