@@ -106,19 +106,19 @@ function AppShell(): React.ReactElement {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-x-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
-      {/* SIDEBAR - Standing alone as its own floating card with a wrapper to force gutters */}
-      <div className="w-full h-16 fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-2 lg:p-4">
+    <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
+      {/* SIDEBAR - Standalone card aligned mathematically with grid heights */}
+      <div className="w-full h-16 fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border">
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
       </div>
 
-      {/* MAIN CONTENT WRAPPER - Restructures scrolling and spaces panels out correctly */}
-      <div className="flex flex-col lg:flex-row w-full flex-1 overflow-x-hidden gap-4 sm:gap-5 lg:gap-6 p-4 sm:p-5 lg:p-6 pb-24 lg:pb-6">
+      {/* MAIN CONTENT WRAPPER - Synchronized viewport boundaries, margins, and layout padding parameters */}
+      <div className="flex flex-col lg:flex-row w-full flex-1 min-w-0 gap-4 lg:gap-6 p-4 lg:p-6 pb-24 lg:pb-6 lg:h-screen box-border">
         
-        {/* LEFT COLUMN (40% Width) — Houses your search parameters inside scrollable rounded glass */}
-        <div className="w-full lg:w-[40%] min-w-0 h-auto lg:h-[calc(100vh-3rem)] flex flex-col">
+        {/* LEFT COLUMN (40% Width) */}
+        <div className="w-full lg:w-[40%] min-w-0 h-auto lg:h-full flex flex-col box-border">
           <div
             className="flex-1 flex flex-col relative rounded-3xl overflow-hidden"
             style={{
@@ -150,8 +150,8 @@ function AppShell(): React.ReactElement {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (60% Width) — Formats processing layout panel components perfectly */}
-        <div className="w-full lg:w-[60%] min-w-0 h-auto lg:h-[calc(100vh-3rem)] flex flex-col gap-4">
+        {/* RIGHT COLUMN (60% Width) */}
+        <div className="w-full lg:w-[60%] min-w-0 h-auto lg:h-full flex flex-col gap-4 lg:gap-6 box-border">
           
           {/* Header Strip component inside right workspace console */}
           <div
@@ -210,7 +210,7 @@ function AppShell(): React.ReactElement {
             </div>
           </div>
 
-          {/* Core Analysis Area — Wraps your terminal generators and charts in a 3D glass card */}
+          {/* Core Analysis Area */}
           <div
             className="flex-1 rounded-3xl relative overflow-hidden flex flex-col"
             style={{
