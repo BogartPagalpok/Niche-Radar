@@ -265,22 +265,24 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
 }
 
 async function fetchWithProxy(url: string): Promise<string> {
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  const proxyFactories = [
+    (target: string) => `https://api.codetabs.com/v1/proxy/?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+  ];
 
-  try {
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Proxy returned status ${response.status}`);
+  for (const createProxyUrl of proxyFactories) {
+    try {
+      const response = await fetch(createProxyUrl(url), { method: 'GET' });
+      if (response.ok) {
+        return await response.text();
+      }
+      console.warn(`Proxy base endpoint returned non-200 status: ${response.status}. Rotating node...`);
+    } catch (error) {
+      console.warn('Proxy attempt encountered network error, attempting pool rotation...', error);
     }
-
-    return await response.text();
-  } catch (error) {
-    console.error('Proxy fetch error:', error);
-    throw error;
   }
+  throw new Error('All configured public CORS proxy pool endpoints returned 403 Forbidden or failed connection parameters.');
 }
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
@@ -329,24 +331,43 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(continuationUrl)}`;
+      const proxyFactories = [
+        (target: string) => `https://api.codetabs.com/v1/proxy/?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+      ];
 
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      let data: any = null;
+      let success = false;
 
-      if (!response.ok) {
+      for (const createProxyUrl of proxyFactories) {
+        try {
+          const response = await fetch(createProxyUrl(continuationUrl), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            success = true;
+            break;
+          }
+          console.warn(`Continuation proxy endpoint failed with status ${response.status}. Rotating pool...`);
+        } catch (err) {
+          console.warn('Continuation token connection error, rotating proxy node...', err);
+        }
+      }
+
+      if (!success || !data) {
         return {
           videos: [],
           continuation: null,
         };
       }
 
-      const data: YouTubeInitialData = await response.json();
       const result = extractVideosFromContinuation(data);
 
       return {
