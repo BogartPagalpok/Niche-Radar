@@ -264,11 +264,10 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
   return { videos, continuation };
 }
 
+// ---------- UPDATED: uses your personal Cloudflare Worker ----------
 async function fetchWithProxy(url: string): Promise<string> {
   const proxyFactories = [
-    (target: string) => `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
-    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-    (target: string) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(target)}`
+    (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`
   ];
 
   for (const createProxyUrl of proxyFactories) {
@@ -331,9 +330,9 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
+      // ---------- UPDATED: uses your personal Cloudflare Worker ----------
       const postProxyFactories = [
-        (target: string) => `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
-        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`
       ];
 
       let data: any = null;
