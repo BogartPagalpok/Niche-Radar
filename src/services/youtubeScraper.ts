@@ -265,14 +265,11 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
 }
 
 async function fetchWithProxy(url: string): Promise<string> {
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
 
   try {
     const response = await fetch(proxyUrl, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -295,7 +292,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
 
       htmlContent = await fetchWithProxy(searchUrl);
 
-      const match = htmlContent.match(/var ytInitialData = ({.*?});/);
+      const match = htmlContent.match(/var ytInitialData\s*=\s*({.*?})/);
       if (!match || !match[1]) {
         return {
           videos: [],
@@ -332,7 +329,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(continuationUrl)}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(continuationUrl)}`;
 
       const response = await fetch(proxyUrl, {
         method: 'POST',
