@@ -1,10 +1,35 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
 import { type ExtractedVideo, searchYouTubeVideos } from '../services/youtubeScraper';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { VideoCard } from './VideoCard';
 import { useVideoContext } from '../context/VideoContext';
 import { useTheme } from '../context/ThemeContext';
+
+// ----- ADDED FILTER CONSTANTS -----
+const MIN_VIEWS = 500000;
+const MAX_AGE_DAYS = 15;
+
+// Convert YouTube relative date (e.g., "5d ago", "2w ago", "1mo ago") to days
+function getDaysAgo(dateStr: string): number {
+  if (!dateStr) return 999;
+  const str = dateStr.toLowerCase();
+  // days
+  let match = str.match(/(\d+)\s*d(?:ay)?s?/);
+  if (match) return parseInt(match[1]);
+  // weeks
+  match = str.match(/(\d+)\s*w(?:ee)?k?s?/);
+  if (match) return parseInt(match[1]) * 7;
+  // months
+  match = str.match(/(\d+)\s*mo(?:nth)?s?/);
+  if (match) return parseInt(match[1]) * 30;
+  // years
+  match = str.match(/(\d+)\s*y(?:ear)?s?/);
+  if (match) return parseInt(match[1]) * 365;
+  // fallback (treat as too old)
+  return 999;
+}
+// ----- END OF ADDITIONS -----
 
 interface SearchState {
   query: string;
@@ -30,6 +55,19 @@ export default function NicheSearch(): React.ReactElement {
   });
 
   const loadMoreCountRef = useRef<number>(0);
+
+  // ----- ADDED: filter videos on each state change -----
+  const filteredVideos = useMemo(() => {
+    if (!state.hasSearched) return [];
+    return state.videos.filter(video => {
+      // Ensure viewCount is a number
+      const viewCount = typeof video.viewCount === 'number' ? video.viewCount : parseInt(String(video.viewCount), 10);
+      if (isNaN(viewCount) || viewCount < MIN_VIEWS) return false;
+      const days = getDaysAgo(video.uploadedDate);
+      return days <= MAX_AGE_DAYS;
+    });
+  }, [state.videos, state.hasSearched]);
+  // ----- END OF ADDITION -----
 
   const performSearch = useCallback(
     async (query: string, continuation: string | null = null): Promise<void> => {
@@ -289,7 +327,8 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {state.hasSearched && state.videos.length === 0 && !state.isLoading && (
+        {/* CHANGED: empty state now uses filteredVideos */}
+        {state.hasSearched && filteredVideos.length === 0 && !state.isLoading && (
           <div
             style={{
               display: 'flex',
@@ -303,12 +342,15 @@ export default function NicheSearch(): React.ReactElement {
           >
             <AlertCircle size={32} strokeWidth={1.5} color="var(--text-tertiary)" />
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              No results found
+              {state.videos.length > 0
+                ? `No videos with ≥${MIN_VIEWS.toLocaleString()} views in the last ${MAX_AGE_DAYS} days.`
+                : 'No results found'}
             </p>
           </div>
         )}
 
-        {state.videos.map(video => (
+        {/* CHANGED: render filteredVideos instead of state.videos */}
+        {filteredVideos.map(video => (
           <VideoCard
             key={video.video_id}
             video={video}
@@ -316,9 +358,9 @@ export default function NicheSearch(): React.ReactElement {
           />
         ))}
 
-        {/* Infinite scroll sentinel */}
+        {/* Infinite scroll sentinel (unchanged) */}
         {state.hasSearched && state.videos.length > 0 && state.continuation && (
-          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifycontent: 'center' }}>
+          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {state.isLoadingMore && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Loader2
@@ -335,7 +377,7 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {/* End of results indicator */}
+        {/* End of results indicator (unchanged) */}
         {state.hasSearched && state.videos.length > 0 && !state.continuation && (
           <div
             style={{
