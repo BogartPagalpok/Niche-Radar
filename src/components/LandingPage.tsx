@@ -1,4 +1,4 @@
-import { Youtube, TrendingUp, Search, Zap, Settings, BarChart3, Layers, ArrowRight, Star, ChevronRight } from 'lucide-react';
+import { Youtube, TrendingUp, Search, Zap, Settings, Layers, ArrowRight, Star } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface LandingPageProps {
@@ -10,281 +10,126 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
 
   return (
     <div
-      className="min-h-screen w-full overflow-y-auto"
+      className="min-h-screen w-full overflow-hidden custom-scroll"
       style={{ background: 'var(--bg-root)' }}
     >
-      <div className="max-w-4xl mx-auto px-6 pt-16 pb-12">
+      <div className="h-full w-full flex flex-col lg:flex-row">
         
-        {/* Logo + Brand */}
-        <div className="text-center mb-10">
-          <div
-            className="flex items-center justify-center w-14 h-14 mx-auto mb-5"
-            style={{
-              background: 'linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%)',
-              borderRadius: '16px',
-              boxShadow: 'var(--shadow-red)',
-            }}
-          >
-            <Youtube size={28} strokeWidth={2} color="#FFFFFF" />
-          </div>
-          
-          <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '8px' }}>
-            Niche Radar
-          </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            YouTube Intelligence Platform
-          </p>
-        </div>
-
-        {/* Hero Card */}
-        <div
-          style={{
-            background: 'var(--bg-panel)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-clay-lg)',
-            border: '1px solid var(--border-subtle)',
-            padding: '32px 24px',
-            textAlign: 'center',
-            marginBottom: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '2px',
-              background: isDark
-                ? 'linear-gradient(90deg, transparent, rgba(255,51,51,0.3), transparent)'
-                : 'linear-gradient(90deg, transparent, rgba(255,51,51,0.5), transparent)',
-            }}
-          />
-          
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '12px', position: 'relative' }}>
-            Discover Trending Niches.
-            <br />
-            <span style={{ color: 'var(--yt-red)' }}>Reverse-Engineer Success.</span>
-          </h2>
-          
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto 24px', lineHeight: 1.6, position: 'relative' }}>
-            Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
-          </p>
-
-          <button
-            onClick={onEnterApp}
-            className="clay-btn-red flex items-center gap-2 mx-auto px-6 py-3"
-            style={{ fontSize: '0.9rem', fontWeight: 700, position: 'relative' }}
-          >
-            Launch App
-            <ArrowRight size={18} strokeWidth={2.5} />
-          </button>
-        </div>
-
-        {/* Features */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-          {[
-            { icon: Search, title: 'Niche Discovery', desc: 'Search any topic and see top-performing videos instantly.' },
-            { icon: TrendingUp, title: 'Trend Analysis', desc: 'Track view velocity and emerging topics in real-time.' },
-            { icon: Zap, title: 'AI Script Generator', desc: 'Reverse-engineer viral videos into ready-to-record scripts.' },
-            { icon: Layers, title: 'Keyword Clusters', desc: 'Discover semantic keyword groups driving search traffic.' },
-          ].map(feature => {
-            const Icon = feature.icon;
-            return (
-              <div
-                key={feature.title}
-                className="stat-card flex items-start gap-3"
-                style={{ cursor: 'default' }}
-              >
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-surface)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    boxShadow: 'var(--shadow-clay-sm)',
-                  }}
-                >
-                  <Icon size={16} strokeWidth={2} color="var(--yt-red)" />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                    {feature.title}
-                  </h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                    {feature.desc}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* How It Works */}
-        <div style={{ marginBottom: '24px' }}>
-          <h2
-            style={{
-              fontSize: '1.1rem',
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              textAlign: 'center',
-              marginBottom: '16px',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            How It Works
-          </h2>
-          
-          <div
-            style={{
-              background: 'var(--bg-panel)',
-              borderRadius: 'var(--radius-lg)',
-              boxShadow: 'var(--shadow-clay-lg)',
-              border: '1px solid var(--border-subtle)',
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
+        {/* LEFT — Hero */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-0">
+          <div style={{ maxWidth: '420px' }}>
+            {/* Logo */}
             <div
+              className="flex items-center justify-center w-12 h-12 mb-6"
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: isDark
-                  ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)'
-                  : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                background: 'linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%)',
+                borderRadius: '14px',
+                boxShadow: 'var(--shadow-red)',
               }}
-            />
-
-            {[
-              {
-                step: '01',
-                title: 'Add Your Gemini API Key',
-                desc: 'Go to App Settings and paste your free Google Gemini API key. Get one in 30 seconds at aistudio.google.com — no credit card required.',
-                icon: Settings,
-              },
-              {
-                step: '02',
-                title: 'Search Any Niche',
-                desc: 'Enter a topic or keyword. Niche Radar fetches real YouTube search results and extracts channel data, view counts, and trends.',
-                icon: Search,
-              },
-              {
-                step: '03',
-                title: 'Generate AI Scripts',
-                desc: 'Click any video to analyze it with Gemini AI. Get ready-to-record scripts, thumbnail prompts, and retention strategies.',
-                icon: Zap,
-              },
-            ].map((item, i, arr) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.step}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '14px',
-                    padding: '18px 20px',
-                    borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                    position: 'relative',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #FF3333, #CC0000)',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.8rem',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                      boxShadow: 'var(--shadow-red)',
-                    }}
-                  >
-                    {item.step}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
-                      <Icon size={15} strokeWidth={2} color="var(--yt-red)" />
-                      <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {item.title}
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* BYOK Info Card */}
-        <div
-          style={{
-            background: 'var(--bg-panel)',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-clay)',
-            border: '1px solid var(--border-subtle)',
-            padding: '20px',
-            marginBottom: '24px',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            🔑 Bring Your Own Keys
-          </p>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-            Niche Radar is free and open-source. You only need a free Gemini API key from{' '}
-            <a 
-              href="https://aistudio.google.com/apikey" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ color: 'var(--yt-red)', fontWeight: 600, textDecoration: 'underline' }}
             >
-              Google AI Studio
-            </a>
-            {' '}to power the AI features. No credit card. No subscription. Your keys stay in your browser.
-          </p>
-        </div>
+              <Youtube size={24} strokeWidth={2} color="#FFFFFF" />
+            </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            borderTop: '1px solid var(--border-subtle)',
-            paddingTop: '20px',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', margin: '0 0 2px', fontWeight: 500 }}>
-            &copy; Illusive Studio
-          </p>
-          <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: '0 0 10px' }}>
-            Developed by: Ian Lester Eclevia
-          </p>
-          
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
-            {/* Add links later */}
+            <h1 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '12px', lineHeight: 1.15 }}>
+              Discover Trending Niches.
+              <br />
+              <span style={{ color: 'var(--yt-red)' }}>Reverse-Engineer Success.</span>
+            </h1>
+
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '28px' }}>
+              Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
+            </p>
+
+            <button
+              onClick={onEnterApp}
+              className="clay-btn-red flex items-center gap-2 px-6 py-3"
+              style={{ fontSize: '0.9rem', fontWeight: 700 }}
+            >
+              Launch App
+              <ArrowRight size={18} strokeWidth={2.5} />
+            </button>
+
+            {/* Footer — only on desktop left side */}
+            <div className="hidden lg:block" style={{ marginTop: '48px' }}>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>
+                &copy; Illusive Studio
+              </p>
+              <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>
+                Developed by: Ian Lester Eclevia
+              </p>
+            </div>
           </div>
-
-          <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.5, margin: 0 }}>
-            Niche Radar v1.0
-          </p>
         </div>
 
+        {/* RIGHT — Features + Steps */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-0">
+          <div style={{ maxWidth: '480px', width: '100%' }} className="flex flex-col gap-3">
+            
+            {/* Features */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { icon: Search, title: 'Niche Discovery', desc: 'Search any topic and see top-performing videos instantly.' },
+                { icon: TrendingUp, title: 'Trend Analysis', desc: 'Track view velocity and emerging topics in real-time.' },
+                { icon: Zap, title: 'AI Script Generator', desc: 'Reverse-engineer viral videos into ready-to-record scripts.' },
+                { icon: Layers, title: 'Keyword Clusters', desc: 'Discover semantic keyword groups driving search traffic.' },
+              ].map(feature => {
+                const Icon = feature.icon;
+                return (
+                  <div key={feature.title} className="stat-card flex items-start gap-3" style={{ cursor: 'default' }}>
+                    <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
+                      <Icon size={15} strokeWidth={2} color="var(--yt-red)" />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>{feature.title}</h3>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{feature.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Steps */}
+            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-clay-lg)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+              {[
+                { step: '1', title: 'Add your Gemini API key', desc: 'Get a free key at aistudio.google.com, paste it in App Settings. No credit card.', icon: Settings },
+                { step: '2', title: 'Search any niche', desc: 'Enter a topic. Get real YouTube results with channel data and trends.', icon: Search },
+                { step: '3', title: 'Generate AI scripts', desc: 'Click a video. Get ready-to-record scripts and thumbnail prompts.', icon: Zap },
+              ].map((item, i, arr) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.step} style={{ display: 'flex', gap: '12px', padding: '14px 18px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #FF3333, #CC0000)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0, boxShadow: 'var(--shadow-red)' }}>
+                      {item.step}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5" style={{ marginBottom: '2px' }}>
+                        <Icon size={13} strokeWidth={2} color="var(--yt-red)" />
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{item.title}</span>
+                      </div>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>{item.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* BYOK */}
+            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-clay)', border: '1px solid var(--border-subtle)', padding: '14px 18px', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                🔑 <strong style={{ color: 'var(--text-primary)' }}>Bring Your Own Keys.</strong> Free and open-source. Keys stay in your browser.{' '}
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--yt-red)', fontWeight: 600 }}>
+                  Get a key →
+                </a>
+              </p>
+            </div>
+
+            {/* Footer — mobile only */}
+            <div className="lg:hidden text-center" style={{ paddingTop: '4px' }}>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>&copy; Illusive Studio</p>
+              <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>Developed by: Ian Lester Eclevia &nbsp;|&nbsp; v1.0</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
