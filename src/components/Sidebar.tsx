@@ -67,9 +67,9 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
 
   return (
     <aside
-      className="w-full h-full lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
+      className="w-full lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
       style={{
-        background: 'var(--bg-root)',
+        background: 'transparent',
         boxSizing: 'border-box',
       }}
     >
@@ -171,7 +171,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
       </div>
 
       {/* DESKTOP SIDEBAR */}
-      <div className="hidden lg:flex flex-col h-full w-full" style={{ boxSizing: 'border-box' }}>
+      <div className="hidden lg:flex flex-col h-full w-full" style={{ boxSizing: 'border-box', background: 'var(--bg-panel)', borderRight: '1px solid var(--border-subtle)' }}>
         {/* Logo Section */}
         <div
           className="flex items-center gap-3 flex-shrink-0"
