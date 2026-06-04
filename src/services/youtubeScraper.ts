@@ -264,7 +264,7 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
   return { videos, continuation };
 }
 
-async function fetchWithProxy(url: string, method: string = 'GET', body?: any): Promise<string> {
+async function fetchWithProxy(url: string): Promise<string> {
   const proxyFactories = [
     (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
     (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
@@ -275,9 +275,7 @@ async function fetchWithProxy(url: string, method: string = 'GET', body?: any): 
   for (const createProxyUrl of proxyFactories) {
     try {
       const response = await fetch(createProxyUrl(url), {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: body ? JSON.stringify(body) : undefined,
+        method: 'GET',
         signal: AbortSignal.timeout(10000),
       });
       if (response.ok) {
@@ -293,13 +291,12 @@ async function fetchWithProxy(url: string, method: string = 'GET', body?: any): 
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
-    // Dynamic key retrieval to avoid hardcoded quota issues
-    const apiKey = localStorage.getItem('niche-radar-youtube-api-key') || 'AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E';
+    let htmlContent: string;
 
     if (!continuation) {
       const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%3D%3D`;
 
-      const htmlContent = await fetchWithProxy(searchUrl);
+      htmlContent = await fetchWithProxy(searchUrl);
 
       const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
       if (!match || !match[1]) {
@@ -326,7 +323,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         };
       }
     } else {
-      const continuationUrl = `https://www.youtube.com/youtubei/v1/search?key=${apiKey}`;
+      const continuationUrl = `https://www.youtube.com/youtubei/v1/search?key=AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E`;
 
       const requestBody = {
         context: {
@@ -338,8 +335,44 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
-      const dataStr = await fetchWithProxy(continuationUrl, 'POST', requestBody);
-      const data = JSON.parse(dataStr);
+      const postProxyFactories = [
+        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+      ];
+
+      let data: any = null;
+      let success = false;
+
+      for (const createProxyUrl of postProxyFactories) {
+        try {
+          const response = await fetch(createProxyUrl(continuationUrl), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(10000),
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            success = true;
+            break;
+          }
+          console.warn(`Continuation proxy failed with status ${response.status}, trying next...`);
+        } catch (err) {
+          console.warn('Continuation proxy error, trying next...', err);
+        }
+      }
+
+      if (!success || !data) {
+        return {
+          videos: [],
+          continuation: null,
+        };
+      }
+
       const result = extractVideosFromContinuation(data);
 
       return {
