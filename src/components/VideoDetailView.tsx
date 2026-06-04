@@ -1,24 +1,26 @@
 import { useState } from 'react';
-import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2, TrendingUp } from 'lucide-react';
+import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2, TrendingUp, Search } from 'lucide-react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { useTheme } from '../context/ThemeContext';
 import { useVideoContext } from '../context/VideoContext';
+import { type ActiveView } from './Sidebar';
 
 interface VideoDetailViewProps {
   video: ExtractedVideo;
+  onNavigate?: (view: ActiveView) => void; // Optional hook if passing layout handlers downward
 }
 
 type TabType = 'details' | 'analytics';
 
-export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactElement {
+export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): React.ReactElement {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [channelStats, setChannelStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsFetched, setStatsFetched] = useState(false);
   const { isDark } = useTheme();
-  const { savedNiches, saveVideoToNiches, removeVideoFromNiches } = useVideoContext();
+  const { savedNiches, saveVideoToNiches, removeVideoFromNiches, clearSelection } = useVideoContext();
 
   const isBookmarked = savedNiches.some(v => v.video_id === video.video_id);
 
@@ -40,7 +42,6 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
     if (!video?.channel_id || loadingStats) return;
     setLoadingStats(true);
     try {
-      // FIX: Targeted your authenticated OAuth token key instead of gemini key string
       const token = localStorage.getItem('niche-radar-google-token');
       if (!token) {
         setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add Token in Settings' });
@@ -49,10 +50,8 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
         return;
       }
       
-      // FIX: Cleaned literal string boundary quotes out of stored tokens
       const cleanToken = token.replace(/^"|"$/g, '');
 
-      // FIX: Integrated proper Bearer Authorization headers for Google Gateway validation
       const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}`, {
         headers: { 
           'Authorization': `Bearer ${cleanToken}`,
@@ -74,6 +73,24 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
     }
     setStatsFetched(true);
     setLoadingStats(false);
+  };
+
+  const handleExportMarkdown = (): void => {
+    const content = `# Niche Radar Video Blueprint: ${video.title}\n\n` +
+      `- **Video ID:** ${video.video_id}\n` +
+      `- **Channel:** ${video.channel_name} (${video.channel_id})\n` +
+      `- **Views:** ${video.view_count}\n` +
+      `- **Published:** ${video.upload_date}\n\n` +
+      `## Description\n${video.description || 'No description provided.'}`;
+
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `blueprint-${video.video_id}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
@@ -178,6 +195,41 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
             ) : (
               <Youtube size={48} strokeWidth={1.5} color="var(--yt-red)" />
             )}
+          </div>
+
+          {/* Action Row containing: New Search, View Trends, Export Report */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            <button
+              onClick={() => {
+                clearSelection();
+                if (onNavigate) onNavigate('niche-search');
+              }}
+              className="clay-btn-secondary"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
+            >
+              <Search size={14} color="#EF4444" strokeWidth={2.5} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>New Search</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (onNavigate) onNavigate('trend-analysis');
+              }}
+              className="clay-btn-secondary"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
+            >
+              <TrendingUp size={14} color="#3B82F6" strokeWidth={2.5} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>View Trends</span>
+            </button>
+
+            <button
+              onClick={handleExportMarkdown}
+              className="clay-btn-secondary"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
+            >
+              <ExternalLink size={14} color="#10B981" strokeWidth={2.5} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>Export Report</span>
+            </button>
           </div>
 
           {/* Video title */}
@@ -291,7 +343,7 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
                 onClick={handleFetchStats}
                 disabled={loadingStats}
                 className="clay-btn-secondary flex items-center gap-2 px-4 py-3"
-                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center' }}
+                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center', cursor: 'pointer' }}
               >
                 {loadingStats ? (
                   <>
@@ -300,7 +352,7 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
                   </>
                 ) : (
                   <>
-                    <TrendingUp size={14} />
+                    <BarChart3 size={14} />
                     View Channel Stats (1 API call)
                   </>
                 )}
