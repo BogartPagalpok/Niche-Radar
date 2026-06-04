@@ -1,4 +1,4 @@
-import { Youtube, TrendingUp, Search, Zap, Settings, Layers, ArrowRight, Star } from 'lucide-react';
+import { Youtube, TrendingUp, Search, Zap, Settings, Layers, ArrowRight, History } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface LandingPageProps {
@@ -16,10 +16,12 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
       <div className="min-h-screen w-full flex flex-col lg:flex-row">
         
         {/* LEFT — Hero */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12">
-          <div className="w-full" style={{ maxWidth: '540px' }}>
-            <h1 style={{ fontSize: 'clamp(2.8rem, 8.5vw, 4.2rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: 1.02 }}>
-              Discover Trending Niches.
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16">
+          <div className="w-full" style={{ maxWidth: '640px' }}>
+            <h1 style={{ fontSize: 'clamp(3.5rem, 7.5vw, 5.5rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: 0.95 }}>
+              Discover
+              <br />
+              Trending Niches.
               <br />
               <span style={{ 
                 background: 'linear-gradient(135deg, #FF4D4D 0%, #FF0000 100%)',
@@ -27,11 +29,13 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                 WebkitTextFillColor: 'transparent',
                 display: 'inline-block'
               }}>
-                Reverse-Engineer Success.
+                Reverse-Engineer
+                <br />
+                Success.
               </span>
             </h1>
 
-            <p style={{ fontSize: 'clamp(1.05rem, 2.8vw, 1.15rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '480px' }}>
+            <p style={{ fontSize: 'clamp(1.1rem, 2vw, 1.25rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '520px' }}>
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
@@ -45,7 +49,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
             </button>
 
             {/* Footer — only on desktop left side */}
-            <div className="hidden lg:block" style={{ marginTop: '80px' }}>
+            <div className="hidden lg:block" style={{ marginTop: '96px' }}>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>
                 &copy; Illusive Studio
               </p>
@@ -56,8 +60,8 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
           </div>
         </div>
 
-        {/* RIGHT — Features + Steps */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12">
+        {/* RIGHT — Features + Steps + Changelog */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16">
           <div style={{ maxWidth: '520px', width: '100%' }} className="flex flex-col gap-4">
             
             {/* Features */}
@@ -116,6 +120,27 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                   Get a key →
                 </a>
               </p>
+            </div>
+
+            {/* Changelog Section */}
+            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '16px 20px' }}>
+              <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                <History size={15} color="var(--yt-red)" />
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>CHANGELOG</span>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <div>
+                  <div className="flex items-center justify-between" style={{ marginBottom: '2px' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>v1.1.0 — UI Overhaul</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>June 2026</span>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    <li>Enlarged typography structure to resolve layout dead spaces on ultra-wide screens</li>
+                    <li>Removed redundant brand identifier imagery from primary column</li>
+                    <li>Refactored grid wrapper breakpoints to handle vertical scaling clipping bugs</li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
             {/* Footer — mobile only */}
