@@ -94,6 +94,7 @@ interface YouTubeInitialData {
     };
   }>;
 }
+// --- END ADDED ---
 
 function extractViewCount(viewCountText: string | undefined): string {
   if (!viewCountText) return '0';
@@ -255,6 +256,7 @@ function extractShortFromRenderer(item: any): ExtractedVideo | null {
     return null;
   }
 }
+// --- END ADDED ---
 
 function extractVideosFromInitialData(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
   const videos: ExtractedVideo[] = [];
@@ -280,6 +282,7 @@ function extractVideosFromInitialData(data: YouTubeInitialData): { videos: Extra
                 videos.push(extracted);
               }
             }
+            // --- END ADDED ---
           }
         }
       }
@@ -317,6 +320,7 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
                 videos.push(extracted);
               }
             }
+            // --- END ADDED ---
             if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
               continuation = item.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
             }
@@ -358,11 +362,13 @@ async function fetchWithProxy(url: string): Promise<string> {
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
+    let htmlContent: string;
+
     if (!continuation) {
       // --- MODIFIED: removed &sp=EgIQAQ%3D%3D to include both videos and shorts ---
       const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 
-      const htmlContent = await fetchWithProxy(searchUrl);
+      htmlContent = await fetchWithProxy(searchUrl);
 
       const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
       if (!match || !match[1]) {
