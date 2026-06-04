@@ -21,16 +21,6 @@ function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
     return <VideoDetailView video={selectedVideo} />;
   }
 
-  const labels: Record<ActiveView, string> = {
-    dashboard: 'Data Overview',
-    'niche-search': 'Video Details',
-    'trend-analysis': 'Deep Trend View',
-    'keyword-clusters': 'Cluster Explorer',
-    'competitor-scout': 'Channel Deep Dive',
-    'saved-niches': 'Niche Brief',
-    settings: 'API Configuration',
-  };
-
   return (
     <div className="h-full w-full flex flex-col items-center justify-center gap-6 py-12">
       <div
@@ -75,6 +65,7 @@ function AppShell(): React.ReactElement {
   const [proxyReady, setProxyReady] = useState(false);
   const [proxyError, setProxyError] = useState<string | null>(null);
   const { isDark } = useTheme();
+  const { searchedVideos, selectVideo } = useVideoContext();
 
   useEffect(() => {
     (async () => {
@@ -100,7 +91,7 @@ function AppShell(): React.ReactElement {
       case 'keyword-clusters':
         return <KeywordClusters />;
       case 'competitor-scout':
-        return <CompetitorScout />;
+        return <CompetitorScout videos={searchedVideos} onSelectVideo={selectVideo} />;
       case 'saved-niches':
         return <SavedNiches />;
       case 'settings':
@@ -112,17 +103,13 @@ function AppShell(): React.ReactElement {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
-      {/* SIDEBAR - Standalone card aligned mathematically with grid heights */}
       <div className="w-full h-16 fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border">
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
       </div>
 
-      {/* MAIN CONTENT WRAPPER - Synchronized viewport boundaries, margins, and layout padding parameters */}
       <div className="flex flex-col lg:flex-row w-full flex-1 min-w-0 gap-4 lg:gap-6 p-4 lg:p-6 pb-24 lg:pb-6 lg:h-screen box-border">
-        
-        {/* LEFT COLUMN (40% Width) */}
         <div className="w-full lg:w-[40%] min-w-0 h-auto lg:h-full flex flex-col box-border">
           <div
             className="flex-1 flex flex-col relative rounded-3xl overflow-hidden"
@@ -133,7 +120,6 @@ function AppShell(): React.ReactElement {
                 : 'inset 0 1px 0 rgba(255,255,255,1), 0 20px 40px rgba(0,0,0,0.06)',
             }}
           >
-            {/* Top bevel highlight */}
             <div
               style={{
                 position: 'absolute',
@@ -147,18 +133,13 @@ function AppShell(): React.ReactElement {
                 zIndex: 1,
               }}
             />
-
-            {/* Main scrollable section inside left panel */}
             <div className="custom-scroll flex-1 overflow-y-auto p-5 sm:p-6 lg:p-8">
               {renderLeftContent()}
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN (60% Width) */}
         <div className="w-full lg:w-[60%] min-w-0 h-auto lg:h-full flex flex-col gap-4 lg:gap-6 box-border">
-          
-          {/* Header Strip component inside right workspace console */}
           <div
             className="flex-shrink-0 rounded-3xl px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between relative overflow-hidden"
             style={{
@@ -180,7 +161,6 @@ function AppShell(): React.ReactElement {
                   : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
               }}
             />
-
             <div className="flex items-center gap-3 lg:gap-4">
               <div
                 style={{
@@ -208,14 +188,12 @@ function AppShell(): React.ReactElement {
                 Processing Workspace
               </span>
             </div>
-            
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-[10px] lg:text-xs font-bold uppercase tracking-wider text-green-500">Ready</span>
             </div>
           </div>
 
-          {/* Core Analysis Area */}
           <div
             className="flex-1 rounded-3xl relative overflow-hidden flex flex-col"
             style={{
@@ -229,9 +207,7 @@ function AppShell(): React.ReactElement {
               <RightPanelContent view={activeView} />
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
   );
