@@ -6,8 +6,6 @@ import {
   BarChart3,
   BookMarked,
   Zap,
-  Sun,
-  Moon,
   Youtube,
   ChevronRight,
 } from 'lucide-react';
@@ -140,27 +138,32 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             );
           })}
 
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center flex-shrink-0"
-            style={{
-              width: '44px',
-              height: '44px',
-              background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
-              borderRadius: '18px',
-              cursor: 'pointer',
-              boxSizing: 'border-box',
-              transition: 'background-color 200ms ease, border-color 200ms ease',
-            }}
-            title="Toggle theme"
-          >
-            {isDark ? (
-              <Sun size={18} strokeWidth={2} color="rgba(255, 255, 255, 0.6)" />
-            ) : (
-              <Moon size={18} strokeWidth={2} color="rgba(0, 0, 0, 0.5)" />
-            )}
-          </button>
+          {/* UIVERSE ANIMATED TOGGLE SWITCH (MOBILE INLINE SCALING) */}
+          <label className="theme-switch" style={{ '--toggle-size': '14px', marginLeft: '4px', flexShrink: 0 } as React.CSSProperties}>
+            <input 
+              type="checkbox" 
+              className="theme-switch__checkbox" 
+              checked={isDark} 
+              onChange={toggleTheme} 
+            />
+            <div className="theme-switch__container">
+              <div className="theme-switch__circle-container">
+                <div className="theme-switch__sun-moon-container">
+                  <div className="theme-switch__moon">
+                    <div className="theme-switch__spot"></div>
+                    <div className="theme-switch__spot"></div>
+                    <div className="theme-switch__spot"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="theme-switch__clouds"></div>
+              <div className="theme-switch__stars-container">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 131" fill="currentColor" style={{ width: '100%', height: 'auto' }}>
+                  <path d="M129.5 45.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM102.5 17.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM109.5 89.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM35.5 31.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM49.5 81.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM22.5 69.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+                </svg>
+              </div>
+            </div>
+          </label>
         </div>
       </div>
 
@@ -363,53 +366,55 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             width: '100%',
           }}
         >
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
+          {/* DESKTOP FOOTER FLUSH TOGGLE BLOCK */}
+          <div
             style={{
               width: '100%',
-              height: '36px',
-              minHeight: '36px',
+              height: '48px',
               boxSizing: 'border-box',
               padding: '0rem 0.75rem',
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: '10px',
-              cursor: 'pointer',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
-              transition: 'all 200ms ease',
-              color: 'var(--text-secondary)',
-              fontSize: '0.8rem',
-              fontWeight: 500,
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)';
-              el.style.boxShadow = 'var(--shadow-clay-sm)';
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.background = 'var(--bg-surface)';
-              el.style.boxShadow = 'none';
+              justifyContent: 'space-between',
             }}
           >
-            {isDark ? (
-              <>
-                <Sun size={16} strokeWidth={2} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1, textAlign: 'left', lineHeight: '1' }}>Light Mode</span>
-              </>
-            ) : (
-              <>
-                <Moon size={16} strokeWidth={2} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1, textAlign: 'left', lineHeight: '1' }}>Dark Mode</span>
-              </>
-            )}
-          </button>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              {isDark ? 'Dark Mode' : 'Light Mode'}
+            </span>
+            
+            {/* UIVERSE ANIMATED TOGGLE SWITCH (DESKTOP) */}
+            <label className="theme-switch" style={{ '--toggle-size': '15px' } as React.CSSProperties}>
+              <input 
+                type="checkbox" 
+                className="theme-switch__checkbox" 
+                checked={isDark} 
+                onChange={toggleTheme} 
+              />
+              <div className="theme-switch__container">
+                <div className="theme-switch__circle-container">
+                  <div className="theme-switch__sun-moon-container">
+                    <div className="theme-switch__moon">
+                      <div className="theme-switch__spot"></div>
+                      <div className="theme-switch__spot"></div>
+                      <div className="theme-switch__spot"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="theme-switch__clouds"></div>
+                <div className="theme-switch__stars-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 131" fill="currentColor" style={{ width: '100%', height: 'auto' }}>
+                    <path d="M129.5 45.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM102.5 17.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM109.5 89.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM35.5 31.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM49.5 81.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM22.5 69.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+                  </svg>
+                </div>
+              </div>
+            </label>
+          </div>
 
           {/* Credits */}
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', marginTop: '4px' }}>
             <p style={{ margin: '0px', fontSize: '0.6rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
               &copy; Illusive Studio
             </p>
