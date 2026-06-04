@@ -40,16 +40,14 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
     if (!video?.channel_id || statsFetched) return;
     setLoadingStats(true);
     try {
-      const token = localStorage.getItem('niche-radar-google-token');
-      if (!token) {
-        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add Google token in Settings' });
+      const apiKey = localStorage.getItem('niche-radar-gemini-key');
+      if (!apiKey) {
+        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add API key in Settings' });
         setStatsFetched(true);
         setLoadingStats(false);
         return;
       }
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}&key=${apiKey}`);
       const data = await res.json();
       if (data.items?.length) {
         const s = data.items[0].statistics;
