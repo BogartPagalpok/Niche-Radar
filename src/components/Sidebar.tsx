@@ -66,13 +66,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <aside
-      className="w-full lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
-      style={{
-        background: 'transparent',
-        boxSizing: 'border-box',
-      }}
-    >
+    <>
       {/* MOBILE BOTTOM NAV */}
       <div className="flex lg:hidden w-full items-center justify-center p-4 fixed bottom-0 left-0 right-0 z-50 bg-transparent pointer-events-none">
         <div 
@@ -171,7 +165,14 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
       </div>
 
       {/* DESKTOP SIDEBAR */}
-      <div className="hidden lg:flex flex-col h-full w-full" style={{ boxSizing: 'border-box', background: 'var(--bg-panel)', borderRight: '1px solid var(--border-subtle)' }}>
+      <aside
+        className="hidden lg:flex flex-col h-full w-full flex-shrink-0 z-10"
+        style={{
+          background: 'var(--bg-panel)',
+          borderRight: '1px solid var(--border-subtle)',
+          boxSizing: 'border-box',
+        }}
+      >
         {/* Logo Section */}
         <div
           className="flex items-center gap-3 flex-shrink-0"
@@ -422,7 +423,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             Niche Radar v1.0
           </p>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
