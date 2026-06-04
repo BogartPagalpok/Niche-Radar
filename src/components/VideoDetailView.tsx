@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText } from 'lucide-react';
+import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2, TrendingUp } from 'lucide-react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { useTheme } from '../context/ThemeContext';
 import { useVideoContext } from '../context/VideoContext';
+import { fetchChannelStats, type ChannelStats } from '../services/channelStats';
 
 interface VideoDetailViewProps {
   video: ExtractedVideo;
@@ -14,6 +15,9 @@ type TabType = 'details' | 'analytics';
 export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactElement {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
+  const [channelStats, setChannelStats] = useState<ChannelStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [statsFetched, setStatsFetched] = useState(false);
   const { isDark } = useTheme();
   const { savedNiches, saveVideoToNiches, removeVideoFromNiches } = useVideoContext();
 
@@ -31,6 +35,17 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
     } else {
       saveVideoToNiches(video);
     }
+  };
+
+  const handleFetchStats = (): void => {
+    if (!video?.channel_id || statsFetched) return;
+    setLoadingStats(true);
+    fetchChannelStats(video.channel_id)
+      .then(data => {
+        setChannelStats(data);
+        setStatsFetched(true);
+      })
+      .finally(() => setLoadingStats(false));
   };
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
@@ -239,6 +254,58 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
                 {video.upload_date}
               </p>
             </div>
+          </div>
+
+          {/* Channel Stats Button / Card */}
+          <div>
+            {!statsFetched ? (
+              <button
+                onClick={handleFetchStats}
+                disabled={loadingStats}
+                className="clay-btn-secondary flex items-center gap-2 px-4 py-3"
+                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center' }}
+              >
+                {loadingStats ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Loading Channel Stats...
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp size={14} />
+                    View Channel Stats (1 API call)
+                  </>
+                )}
+              </button>
+            ) : channelStats && !channelStats.error ? (
+              <div className="stat-card">
+                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
+                  Channel Stats
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>Subscribers</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{channelStats.subscribers}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>Total Views</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{channelStats.totalViews}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>Videos</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{channelStats.videoCount}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>Country</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{channelStats.country}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                {channelStats?.error || 'Could not load stats'}
+              </p>
+            )}
           </div>
 
           {/* Description */}
