@@ -10,23 +10,41 @@ import { useTheme } from '../context/ThemeContext';
 const MIN_VIEWS = 500000;
 const MAX_AGE_DAYS = 15;
 
-// Convert YouTube relative date (e.g., "5d ago", "2w ago", "1mo ago") to days
-function getDaysAgo(dateStr: string): number {
+// Parse view count: handles numbers, strings with commas, "58M", "120K", etc.
+function parseViewCount(raw: any): number {
+  if (typeof raw === 'number') return raw;
+  if (typeof raw !== 'string') return 0;
+  let cleaned = raw.replace(/,/g, '');
+  const match = cleaned.match(/^([\d.]+)\s*([km])?$/i);
+  if (match) {
+    let num = parseFloat(match[1]);
+    const suffix = match[2]?.toLowerCase();
+    if (suffix === 'k') num *= 1000;
+    if (suffix === 'm') num *= 1000000;
+    return Math.floor(num);
+  }
+  return parseInt(cleaned, 10) || 0;
+}
+
+// Parse relative date strings like "5d ago", "2 weeks ago", "1mo ago", "1y ago"
+function parseDaysAgo(dateStr: string): number {
   if (!dateStr) return 999;
   const str = dateStr.toLowerCase();
-  // days
-  let match = str.match(/(\d+)\s*d(?:ay)?s?/);
-  if (match) return parseInt(match[1]);
-  // weeks
-  match = str.match(/(\d+)\s*w(?:ee)?k?s?/);
-  if (match) return parseInt(match[1]) * 7;
-  // months
-  match = str.match(/(\d+)\s*mo(?:nth)?s?/);
-  if (match) return parseInt(match[1]) * 30;
-  // years
-  match = str.match(/(\d+)\s*y(?:ear)?s?/);
-  if (match) return parseInt(match[1]) * 365;
-  // fallback (treat as too old)
+  // Extract number and unit (d, w, m, y)
+  const match = str.match(/(\d+)\s*([dwmy])/);
+  if (match) {
+    const val = parseInt(match[1]);
+    const unit = match[2];
+    if (unit === 'd') return val;
+    if (unit === 'w') return val * 7;
+    if (unit === 'm') return val * 30;
+    if (unit === 'y') return val * 365;
+  }
+  // Try absolute date (ISO, etc.)
+  const date = new Date(dateStr);
+  if (!isNaN(date.getTime())) {
+    return Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+  }
   return 999;
 }
 // ----- END OF ADDITIONS -----
@@ -56,18 +74,17 @@ export default function NicheSearch(): React.ReactElement {
 
   const loadMoreCountRef = useRef<number>(0);
 
-  // ----- ADDED: filter videos on each state change -----
+  // ----- FIXED: filter videos using robust parsing -----
   const filteredVideos = useMemo(() => {
     if (!state.hasSearched) return [];
     return state.videos.filter(video => {
-      // Ensure viewCount is a number
-      const viewCount = typeof video.viewCount === 'number' ? video.viewCount : parseInt(String(video.viewCount), 10);
-      if (isNaN(viewCount) || viewCount < MIN_VIEWS) return false;
-      const days = getDaysAgo(video.uploadedDate);
+      const viewCount = parseViewCount(video.viewCount);
+      if (viewCount < MIN_VIEWS) return false;
+      const days = parseDaysAgo(video.uploadedDate);
       return days <= MAX_AGE_DAYS;
     });
   }, [state.videos, state.hasSearched]);
-  // ----- END OF ADDITION -----
+  // ----- END OF FIX -----
 
   const performSearch = useCallback(
     async (query: string, continuation: string | null = null): Promise<void> => {
@@ -327,7 +344,7 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {/* CHANGED: empty state now uses filteredVideos */}
+        {/* Empty state uses filteredVideos */}
         {state.hasSearched && filteredVideos.length === 0 && !state.isLoading && (
           <div
             style={{
@@ -349,7 +366,7 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {/* CHANGED: render filteredVideos instead of state.videos */}
+        {/* Render filteredVideos */}
         {filteredVideos.map(video => (
           <VideoCard
             key={video.video_id}
@@ -358,7 +375,7 @@ export default function NicheSearch(): React.ReactElement {
           />
         ))}
 
-        {/* Infinite scroll sentinel (unchanged) */}
+        {/* Infinite scroll sentinel */}
         {state.hasSearched && state.videos.length > 0 && state.continuation && (
           <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {state.isLoadingMore && (
@@ -377,7 +394,7 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {/* End of results indicator (unchanged) */}
+        {/* End of results indicator */}
         {state.hasSearched && state.videos.length > 0 && !state.continuation && (
           <div
             style={{
