@@ -6,7 +6,7 @@ import { PrivateMetrics } from './PrivateMetrics';
 import { ScriptPromptGenerator } from './ScriptPromptGenerator';
 import { ThumbnailPromptGenerator } from './ThumbnailPromptGenerator';
 import { AnalysisReport } from './AnalysisReport';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 interface AnalyticsPanelProps {
   video: ExtractedVideo;
@@ -16,6 +16,7 @@ interface GeneratorState {
   scriptPrompt: string;
   thumbnailPrompt: string;
   isLoading: boolean;
+  error: string | null;
 }
 
 export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactElement {
@@ -24,6 +25,7 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
     scriptPrompt: '',
     thumbnailPrompt: '',
     isLoading: false,
+    error: null,
   });
 
   useEffect(() => {
@@ -33,11 +35,12 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
       scriptPrompt: '',
       thumbnailPrompt: '',
       isLoading: false,
+      error: null,
     });
   }, [video.video_id]);
 
   const handleTriggerAnalysis = async (): Promise<void> => {
-    setGeneratorState(prev => ({ ...prev, isLoading: true }));
+    setGeneratorState(prev => ({ ...prev, isLoading: true, error: null }));
 
     const metricsResult = await fetchYouTubeMetrics(video.video_id);
     if (!isMetricsError(metricsResult)) {
@@ -45,15 +48,18 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
     }
 
     const scriptResult = await generateScriptPrompt(video);
-    const scriptPrompt = !isGeneratorError(scriptResult) ? scriptResult.script : '';
+    const isScriptError = isGeneratorError(scriptResult);
+    const scriptPrompt = !isScriptError ? scriptResult.script : '';
 
     const thumbnailResult = await generateThumbnailPrompt(video);
-    const thumbnailPrompt = !isGeneratorError(thumbnailResult) ? thumbnailResult.prompt : '';
+    const isThumbError = isGeneratorError(thumbnailResult);
+    const thumbnailPrompt = !isThumbError ? thumbnailResult.prompt : '';
 
     setGeneratorState({
       scriptPrompt: scriptPrompt,
       thumbnailPrompt: thumbnailPrompt,
       isLoading: false,
+      error: (isScriptError || isThumbError) ? "API Error: Please check your Gemini API key in App Settings. It may be missing, invalid, or lacking permissions." : null,
     });
   };
 
@@ -90,6 +96,14 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
           >
             Run Blueprint Extraction
           </button>
+          
+          {/* Display API Error if it fails silently */}
+          {generatorState.error && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', color: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: '6px' }}>
+              <AlertCircle size={14} />
+              <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600 }}>{generatorState.error}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -122,18 +136,8 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
       {hasGeneratedData && !generatorState.isLoading && (
         <>
-          {/* Section 1: Performance Metrics */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               1. Performance Metrics
             </h2>
             <PrivateMetrics videoId={video.video_id} />
@@ -141,18 +145,8 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
           <div style={{ height: '1px', background: 'var(--border-subtle)', borderRadius: '999px', opacity: 0.4 }} />
 
-          {/* Section 2: Script Prompt */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               2. Content Script Prompt
             </h2>
             <ScriptPromptGenerator video={video} />
@@ -160,18 +154,8 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
           <div style={{ height: '1px', background: 'var(--border-subtle)', borderRadius: '999px', opacity: 0.4 }} />
 
-          {/* Section 3: Thumbnail Prompt */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               3. Thumbnail Prompt
             </h2>
             <ThumbnailPromptGenerator video={video} />
@@ -179,18 +163,8 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
           <div style={{ height: '1px', background: 'var(--border-subtle)', borderRadius: '999px', opacity: 0.4 }} />
 
-          {/* Section 4: Analysis Report */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               4. Complete Analysis Report
             </h2>
             <AnalysisReport
