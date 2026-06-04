@@ -10,45 +10,47 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
 
   return (
     <div
-      className="min-h-screen w-full overflow-y-auto custom-scroll"
+      className="min-h-screen w-full overflow-y-auto custom-scroll flex items-center justify-center py-12 lg:py-0"
       style={{ background: 'var(--bg-root)' }}
     >
-      <div className="min-h-screen w-full flex flex-col lg:flex-row">
+      <div className="w-full max-w-[1440px] flex flex-col lg:flex-row items-center justify-between px-6 sm:px-12 lg:px-16 xl:px-24 gap-12 lg:gap-8">
         
         {/* LEFT — Hero */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16">
-          <div className="w-full" style={{ maxWidth: '640px' }}>
-            <h1 style={{ fontSize: 'clamp(2.5rem, 5.5vw, 4.2rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: 1.1 }}>
-              Discover Trending Niches.{' '}
+        <div className="w-full lg:w-[55%] flex flex-col justify-center py-6">
+          <div className="w-full" style={{ maxWidth: '680px' }}>
+            <h1 style={{ fontSize: '72px', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: '1.05' }} className="sm:text-[84px] lg:text-[76px] xl:text-[88px]">
+              Discover Trending Niches.
+              <br />
               <span style={{ 
                 background: 'linear-gradient(135deg, #FF4D4D 0%, #FF0000 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                display: 'inline'
+                display: 'inline-block',
+                marginTop: '8px'
               }}>
                 Reverse-Engineer Success.
               </span>
             </h1>
 
-            <p style={{ fontSize: 'clamp(1rem, 1.8vw, 1.15rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '520px' }}>
+            <p style={{ fontSize: '18px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '520px' }} className="lg:text-[19px]">
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
             <button
               onClick={onEnterApp}
-              className="clay-btn-red flex items-center justify-center lg:justify-start gap-2 px-8 py-4 w-full sm:w-auto transition-transform hover:scale-[1.02]"
-              style={{ fontSize: '1rem', fontWeight: 700 }}
+              className="clay-btn-red flex items-center justify-center gap-2 px-8 py-4 w-full sm:w-auto transition-transform hover:scale-[1.02]"
+              style={{ fontSize: '16px', fontWeight: 700 }}
             >
               Launch App
               <ArrowRight size={20} strokeWidth={2.5} />
             </button>
 
-            {/* Footer — only on desktop left side */}
-            <div className="hidden lg:block" style={{ marginTop: '96px' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>
+            {/* Footer — balanced distance */}
+            <div className="hidden lg:block" style={{ marginTop: '100px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>
                 &copy; Illusive Studio
               </p>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>
                 Developed by: Ian Lester Eclevia
               </p>
             </div>
@@ -56,8 +58,8 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
         </div>
 
         {/* RIGHT — Features + Steps + Changelog */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16">
-          <div style={{ maxWidth: '520px', width: '100%' }} className="flex flex-col gap-4">
+        <div className="w-full lg:w-[45%] flex flex-col justify-center py-6">
+          <div style={{ maxWidth: '500px', width: '100%' }} className="flex flex-col gap-4 mx-auto lg:mr-0">
             
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -70,7 +72,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                 const Icon = feature.icon;
                 return (
                   <div key={feature.title} className="stat-card flex items-start gap-3.5 p-4 sm:p-4.5" style={{ cursor: 'default' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifycontent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
                       <Icon size={18} strokeWidth={2} color="var(--yt-red)" />
                     </div>
                     <div>
