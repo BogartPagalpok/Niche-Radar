@@ -1,4 +1,4 @@
-import { TrendingUp, Youtube, Users, Eye, Zap, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, Youtube, Users, Eye, Zap, ArrowUpRight, AlertCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useVideoContext } from '../context/VideoContext';
 
@@ -27,7 +27,7 @@ function ScoreBar({ score }: { score: number }) {
       <div
         style={{
           height: '100%',
-          width: `${score}%`,
+          width: `${Math.min(100, Math.max(0, score))}%`,
           borderRadius: '999px',
           background:
             score > 90
@@ -48,59 +48,96 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
+function parseViewCount(viewStr: string): number {
+  const normalized = viewStr?.toUpperCase()?.trim() || '0';
+  if (normalized.includes('M')) return parseFloat(normalized.replace('M', '')) * 1000000;
+  if (normalized.includes('K')) return parseFloat(normalized.replace('K', '')) * 1000;
+  return parseFloat(normalized.replace(/[^0-9.]/g, '')) || 0;
+}
+
+function formatViewLabel(views: number): string {
+  if (views >= 1000000) return (views / 1000000).toFixed(1) + 'M';
+  if (views >= 1000) return (views / 1000).toFixed(0) + 'K';
+  return views.toString();
+}
+
 export default function Dashboard(): React.ReactElement {
   const { isDark } = useTheme();
   const { searchedVideos, savedNiches, selectVideo } = useVideoContext();
 
-  // Helper to normalize view strings for sorting calculations
-  const parseViewCount = (viewStr: string): number => {
-    const normalized = viewStr.toUpperCase().trim();
-    if (normalized.includes('M')) return parseFloat(normalized.replace('M', '')) * 1000000;
-    if (normalized.includes('K')) return parseFloat(normalized.replace('K', '')) * 1000;
-    return parseFloat(normalized.replace(/[^0-9.]/g, '')) || 0;
-  };
+  const hasLiveResults = Array.isArray(searchedVideos) && searchedVideos.length > 0;
 
-  // Dynamic Metrics Generation from active search runtime values
-  const hasLiveResults = searchedVideos.length > 0;
-  
-  const totalAnalyzed = hasLiveResults ? searchedVideos.length : 1284;
-  const uniqueChannels = hasLiveResults ? new Set(searchedVideos.map(v => v.channel_id)).size : 392;
-  const clusterCount = hasLiveResults ? Math.ceil(uniqueChannels / 2.5) : 76;
-  const savedCount = savedNiches.length > 0 ? savedNiches.length : 12;
+  // REAL stats from search results
+  const totalAnalyzed = hasLiveResults ? searchedVideos.length : 0;
+  const uniqueChannels = hasLiveResults ? new Set(searchedVideos.map(v => v.channel_id).filter(Boolean)).size : 0;
+  const savedCount = Array.isArray(savedNiches) ? savedNiches.length : 0;
+
+  // Total views across all search results
+  const totalViews = hasLiveResults
+    ? searchedVideos.reduce((sum, v) => sum + parseViewCount(v.view_count), 0)
+    : 0;
 
   const STATS: StatCardData[] = [
-    { label: 'Videos Tracked', value: totalAnalyzed.toLocaleString(), delta: hasLiveResults ? '+Live sync' : '+12% this week', positive: true, icon: Zap, color: 'var(--yt-red)' },
-    { label: 'Saved Channels', value: savedCount.toString(), delta: 'Local store', positive: true, icon: Eye, color: '#3B82F6' },
-    { label: 'Competitor Channels', value: uniqueChannels.toLocaleString(), delta: hasLiveResults ? 'Extracted' : '+28 new', positive: true, icon: Youtube, color: 'var(--yt-red)' },
-    { label: 'Inferred Clusters', value: clusterCount.toString(), delta: hasLiveResults ? 'Algorithmic' : '+3 generated', positive: true, icon: Users, color: '#10B981' },
+    {
+      label: 'Videos Found',
+      value: totalAnalyzed.toLocaleString(),
+      delta: hasLiveResults ? 'Current search' : 'Search first',
+      positive: true,
+      icon: Zap,
+      color: 'var(--yt-red)',
+    },
+    {
+      label: 'Total Views',
+      value: hasLiveResults ? formatViewLabel(totalViews) : '—',
+      delta: hasLiveResults ? 'Across results' : 'No data',
+      positive: true,
+      icon: Eye,
+      color: '#3B82F6',
+    },
+    {
+      label: 'Unique Channels',
+      value: uniqueChannels.toLocaleString(),
+      delta: hasLiveResults ? 'In results' : 'No data',
+      positive: true,
+      icon: Youtube,
+      color: 'var(--yt-red)',
+    },
+    {
+      label: 'Saved Niches',
+      value: savedCount.toString(),
+      delta: 'Local storage',
+      positive: true,
+      icon: Users,
+      color: '#10B981',
+    },
   ];
 
-  const trendingDataSource = hasLiveResults 
+  // REAL trending: top 5 videos by view count, with real scores based on views
+  const trendingDataSource = hasLiveResults
     ? [...searchedVideos]
         .sort((a, b) => parseViewCount(b.view_count) - parseViewCount(a.view_count))
         .slice(0, 5)
         .map((video) => {
-          let hash = 0;
-          for (let i = 0; i < video.video_id.length; i++) {
-            hash = video.video_id.charCodeAt(i) + ((hash << 5) - hash);
-          }
-          const score = 70 + (Math.abs(hash) % 26);
+          const views = parseViewCount(video.view_count);
+          const maxViews = parseViewCount(searchedVideos[0]?.view_count || '1');
+          // Score relative to top video (70-99 range)
+          const score = Math.round(70 + (views / Math.max(maxViews, 1)) * 29);
+          
+          // Growth based on recency
+          const daysMatch = video.upload_date?.match(/(\d+)/);
+          const daysAgo = daysMatch ? parseInt(daysMatch[0]) : 7;
+          const growth = daysAgo <= 1 ? '+High' : daysAgo <= 3 ? '+Medium' : '+Steady';
+
           return {
             name: video.title,
             score,
-            growth: `+${12 + (Math.abs(hash) % 40)}%`,
+            growth,
             subs: video.channel_name,
             tag: score > 90 ? 'Exploding' : score > 80 ? 'Rising' : 'Steady',
-            rawVideo: video
+            rawVideo: video,
           };
         })
-    : [
-        { name: 'AI Productivity Tools', score: 94, growth: '+38%', subs: '2.1M subs', tag: 'Exploding', rawVideo: null },
-        { name: 'Budget Travel 2025', score: 87, growth: '+22%', subs: '1.4M subs', tag: 'Rising', rawVideo: null },
-        { name: 'Solopreneur Finance', score: 82, growth: '+19%', subs: '870K subs', tag: 'Rising', rawVideo: null },
-        { name: 'Home Lab Tech', score: 78, growth: '+14%', subs: '620K subs', tag: 'Steady', rawVideo: null },
-        { name: 'Slow Living Vlog', score: 73, growth: '+11%', subs: '410K subs', tag: 'Steady', rawVideo: null },
-      ];
+    : [];
 
   return (
     <div className="animate-slide-up space-y-6">
@@ -111,12 +148,21 @@ export default function Dashboard(): React.ReactElement {
             Dashboard
           </h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Real-time YouTube niche intelligence overview
+            {hasLiveResults ? 'Real-time search analytics' : 'Search YouTube to populate dashboard'}
           </p>
         </div>
-        <span className="clay-tag-red flex items-center gap-1.5">
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--yt-red)', display: 'inline-block', animation: 'pulseRed 2s infinite' }} />
-          Live
+        <span className={`clay-tag-red flex items-center gap-1.5 ${hasLiveResults ? '' : 'opacity-50'}`}>
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: hasLiveResults ? 'var(--yt-red)' : 'var(--text-tertiary)',
+              display: 'inline-block',
+              animation: hasLiveResults ? 'pulseRed 2s infinite' : 'none',
+            }}
+          />
+          {hasLiveResults ? 'Live' : 'Idle'}
         </span>
       </div>
 
@@ -190,80 +236,91 @@ export default function Dashboard(): React.ReactElement {
           <div className="flex items-center gap-2">
             <TrendingUp size={15} color="var(--yt-red)" strokeWidth={2.5} />
             <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-              Trending Niches
+              Trending Videos
             </span>
           </div>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>{hasLiveResults ? 'Live Scraped Rankings' : 'Top 5 this week'}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+            {hasLiveResults ? 'Top 5 by views' : 'Search to see trends'}
+          </span>
         </div>
-        <div>
-          {trendingDataSource.map((niche, i) => (
-            <div
-              key={niche.name}
-              onClick={() => niche.rawVideo && selectVideo(niche.rawVideo)}
-              style={{
-                padding: '13px 20px',
-                borderBottom: i < trendingDataSource.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                cursor: niche.rawVideo ? 'pointer' : 'default',
-                transition: 'background 150ms ease',
-              }}
-              onMouseEnter={e => niche.rawVideo && (e.currentTarget.style.background = 'var(--bg-surface)')}
-              onMouseLeave={e => niche.rawVideo && (e.currentTarget.style.background = 'transparent')}
-            >
-              <span
+
+        {!hasLiveResults ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <AlertCircle size={24} strokeWidth={1.5} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+            <p style={{ fontSize: '0.85rem', margin: 0 }}>No data yet</p>
+            <p style={{ fontSize: '0.72rem', marginTop: '4px', opacity: 0.7 }}>Search YouTube to see trending videos</p>
+          </div>
+        ) : (
+          <div>
+            {trendingDataSource.map((niche, i) => (
+              <div
+                key={niche.name}
+                onClick={() => niche.rawVideo && selectVideo(niche.rawVideo)}
                 style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '7px',
-                  background: i === 0 ? 'linear-gradient(135deg, #FF3333, #FF0000)' : 'var(--bg-elevated)',
-                  color: i === 0 ? '#FFFFFF' : 'var(--text-tertiary)',
+                  padding: '13px 20px',
+                  borderBottom: i < trendingDataSource.length - 1 ? '1px solid var(--border-subtle)' : 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  boxShadow: i === 0 ? 'var(--shadow-red)' : 'var(--shadow-clay-sm)',
-                  flexShrink: 0,
+                  gap: '12px',
+                  cursor: 'pointer',
+                  transition: 'background 150ms ease',
                 }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                {i + 1}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {niche.name}
+                <span
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '7px',
+                    background: i === 0 ? 'linear-gradient(135deg, #FF3333, #FF0000)' : 'var(--bg-elevated)',
+                    color: i === 0 ? '#FFFFFF' : 'var(--text-tertiary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    boxShadow: i === 0 ? 'var(--shadow-red)' : 'var(--shadow-clay-sm)',
+                    flexShrink: 0,
+                  }}
+                >
+                  {i + 1}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {niche.name}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {niche.subs}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {niche.subs}
-                </div>
+                <ScoreBar score={niche.score} />
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: '#22C55E',
+                    minWidth: '42px',
+                    textAlign: 'right',
+                  }}
+                >
+                  {niche.growth}
+                </span>
+                <span
+                  className={niche.tag === 'Exploding' ? 'clay-tag-red' : niche.tag === 'Rising' ? 'clay-tag-mint' : 'clay-tag'}
+                >
+                  {niche.tag}
+                </span>
               </div>
-              <ScoreBar score={niche.score} />
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: '#22C55E',
-                  minWidth: '42px',
-                  textAlign: 'right',
-                }}
-              >
-                {niche.growth}
-              </span>
-              <span
-                className={niche.tag === 'Exploding' ? 'clay-tag-red' : niche.tag === 'Rising' ? 'clay-tag-mint' : 'clay-tag'}
-              >
-                {niche.tag}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Analyze Niche', icon: Zap, color: 'var(--yt-red)' },
+          { label: 'New Search', icon: Zap, color: 'var(--yt-red)' },
           { label: 'View Trends', icon: TrendingUp, color: '#3B82F6' },
           { label: 'Export Report', icon: ArrowUpRight, color: '#10B981' },
         ].map(action => {
