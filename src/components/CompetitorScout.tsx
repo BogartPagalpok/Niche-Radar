@@ -38,8 +38,11 @@ function formatViewCount(views: string): string {
 }
 
 export default function CompetitorScout({ videos, isLoading, onSelectVideo }: CompetitorScoutProps) {
+  // THIS IS THE FIX - guard against undefined/null videos
+  const safeVideos = Array.isArray(videos) ? videos : [];
+
   // Group videos by channel to show real competitor analysis
-  const channelGroups = videos.reduce((acc: Record<string, { videos: ExtractedVideo[]; totalViews: number }>, video) => {
+  const channelGroups = safeVideos.reduce((acc: Record<string, { videos: ExtractedVideo[]; totalViews: number }>, video) => {
     const key = video.channel_name || video.channel_id;
     if (!acc[key]) {
       acc[key] = { videos: [], totalViews: 0 };
@@ -60,7 +63,7 @@ export default function CompetitorScout({ videos, isLoading, onSelectVideo }: Co
           Competitor Scout
         </h2>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          {isLoading ? 'Analyzing channels...' : videos.length > 0 ? `${channelEntries.length} channels found across ${videos.length} videos` : 'Search to discover competing channels'}
+          {isLoading ? 'Analyzing channels...' : safeVideos.length > 0 ? `${channelEntries.length} channels found across ${safeVideos.length} videos` : 'Search to discover competing channels'}
         </p>
       </div>
 
@@ -69,7 +72,7 @@ export default function CompetitorScout({ videos, isLoading, onSelectVideo }: Co
           <Loader2 size={20} className="animate-spin" />
           <span style={{ fontSize: '0.85rem' }}>Scouting competitors...</span>
         </div>
-      ) : videos.length === 0 ? (
+      ) : safeVideos.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-secondary)' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, rgba(255,51,51,0.1), rgba(204,0,0,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <Users size={24} strokeWidth={1.5} style={{ opacity: 0.5 }} />
