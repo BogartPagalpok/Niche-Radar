@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { KeyRound, Cpu, Eye, EyeOff, Save, CheckCircle2, ShieldCheck, RefreshCw, Trash2 } from 'lucide-react';
+import { KeyRound, Cpu, Eye, EyeOff, Save, CheckCircle2, ShieldCheck, RefreshCw, Trash2, Youtube } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
+// Storage keys – match those in credentials.ts
 const STORAGE_KEY_TOKEN = 'niche-radar-google-token';
 const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
 const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
+const STORAGE_KEY_YOUTUBE_API_KEY = 'niche-radar-youtube-api-key'; // NEW
 
 interface CredentialFieldProps {
   id: string;
@@ -43,7 +45,6 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
       </p>
 
       <div style={{ position: 'relative' }}>
-        {/* Icon prefix */}
         <div
           style={{
             position: 'absolute',
@@ -87,12 +88,11 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
             paddingTop: '13px',
             paddingBottom: '13px',
             fontSize: '0.82rem',
-            fontFamily: value ? '"JetBrains Mono", monospace' : '"Inter", sans-serif',
+            fontFamily: value && !visible ? '"JetBrains Mono", monospace' : '"Inter", sans-serif',
             letterSpacing: value && !visible ? '0.08em' : '0',
           }}
         />
 
-        {/* Visibility toggle */}
         <button
           type="button"
           onClick={() => setVisible(v => !v)}
@@ -123,21 +123,26 @@ export default function AppSettings() {
   const [googleToken, setGoogleToken] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [channelId, setChannelId] = useState('');
+  const [youtubeApiKey, setYoutubeApiKey] = useState(''); // NEW
   const [savedToken, setSavedToken] = useState(false);
   const [savedGemini, setSavedGemini] = useState(false);
   const [savedChannelId, setSavedChannelId] = useState(false);
+  const [savedYoutubeApiKey, setSavedYoutubeApiKey] = useState(false); // NEW
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   useEffect(() => {
     const t = localStorage.getItem(STORAGE_KEY_TOKEN) ?? '';
     const g = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
     const c = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
+    const y = localStorage.getItem(STORAGE_KEY_YOUTUBE_API_KEY) ?? '';
     setGoogleToken(t);
     setGeminiKey(g);
     setChannelId(c);
+    setYoutubeApiKey(y);
     setSavedToken(!!t);
     setSavedGemini(!!g);
     setSavedChannelId(!!c);
+    setSavedYoutubeApiKey(!!y);
   }, []);
 
   const handleSave = () => {
@@ -145,9 +150,11 @@ export default function AppSettings() {
     localStorage.setItem(STORAGE_KEY_TOKEN, googleToken.trim());
     localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
     localStorage.setItem(STORAGE_KEY_CHANNEL_ID, channelId.trim());
+    localStorage.setItem(STORAGE_KEY_YOUTUBE_API_KEY, youtubeApiKey.trim()); // NEW
     setSavedToken(!!googleToken.trim());
     setSavedGemini(!!geminiKey.trim());
     setSavedChannelId(!!channelId.trim());
+    setSavedYoutubeApiKey(!!youtubeApiKey.trim()); // NEW
     setTimeout(() => setSaveStatus('saved'), 350);
     setTimeout(() => setSaveStatus('idle'), 2200);
   };
@@ -156,15 +163,18 @@ export default function AppSettings() {
     localStorage.removeItem(STORAGE_KEY_TOKEN);
     localStorage.removeItem(STORAGE_KEY_GEMINI);
     localStorage.removeItem(STORAGE_KEY_CHANNEL_ID);
+    localStorage.removeItem(STORAGE_KEY_YOUTUBE_API_KEY); // NEW
     setGoogleToken('');
     setGeminiKey('');
     setChannelId('');
+    setYoutubeApiKey('');
     setSavedToken(false);
     setSavedGemini(false);
     setSavedChannelId(false);
+    setSavedYoutubeApiKey(false);
   };
 
-  const anyFilled = googleToken.trim() || geminiKey.trim() || channelId.trim();
+  const anyFilled = googleToken.trim() || geminiKey.trim() || channelId.trim() || youtubeApiKey.trim();
 
   return (
     <div className="animate-slide-up space-y-5">
@@ -198,7 +208,7 @@ export default function AppSettings() {
         </p>
       </div>
 
-      {/* Main Credential Panel — 3D Claymorphic Pill */}
+      {/* Main Credential Panel */}
       <div
         style={{
           background: 'var(--bg-panel)',
@@ -210,7 +220,6 @@ export default function AppSettings() {
           overflow: 'hidden',
         }}
       >
-        {/* Inner top highlight bevel */}
         <div
           style={{
             position: 'absolute',
@@ -233,6 +242,19 @@ export default function AppSettings() {
             value={googleToken}
             onChange={setGoogleToken}
             saved={savedToken}
+          />
+
+          <div className="clay-divider" />
+
+          <CredentialField
+            id="youtube-api-key" // NEW
+            label="YouTube Data API Key (optional)"
+            hint="Simple API key for public channel stats. Recommended if OAuth token is not available. Create at Google Cloud Console → Credentials."
+            placeholder="AIzaSy···"
+            icon={Youtube}
+            value={youtubeApiKey}
+            onChange={setYoutubeApiKey}
+            saved={savedYoutubeApiKey}
           />
 
           <div className="clay-divider" />
@@ -296,52 +318,20 @@ export default function AppSettings() {
 
       {/* Status indicators */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div
-          className="clay-tag"
-          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-        >
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: savedToken ? '#22C55E' : 'var(--border-strong)',
-              boxShadow: savedToken ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
-              flexShrink: 0,
-            }}
-          />
+        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedToken ? '#22C55E' : 'var(--border-strong)', boxShadow: savedToken ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
           <span>Google Token: {savedToken ? 'Set' : 'Not Set'}</span>
         </div>
-        <div
-          className="clay-tag"
-          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-        >
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: savedChannelId ? '#22C55E' : 'var(--border-strong)',
-              boxShadow: savedChannelId ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
-              flexShrink: 0,
-            }}
-          />
+        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedYoutubeApiKey ? '#22C55E' : 'var(--border-strong)', boxShadow: savedYoutubeApiKey ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
+          <span>YouTube API Key: {savedYoutubeApiKey ? 'Set' : 'Not Set'}</span>
+        </div>
+        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedChannelId ? '#22C55E' : 'var(--border-strong)', boxShadow: savedChannelId ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
           <span>Channel ID: {savedChannelId ? 'Set' : 'Not Set'}</span>
         </div>
-        <div
-          className="clay-tag"
-          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-        >
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: savedGemini ? '#22C55E' : 'var(--border-strong)',
-              boxShadow: savedGemini ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
-              flexShrink: 0,
-            }}
-          />
+        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedGemini ? '#22C55E' : 'var(--border-strong)', boxShadow: savedGemini ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
           <span>Gemini Key: {savedGemini ? 'Set' : 'Not Set'}</span>
         </div>
       </div>
