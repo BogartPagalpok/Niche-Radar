@@ -16,11 +16,11 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
       <div className="min-h-screen w-full flex flex-col lg:flex-row">
         
         {/* LEFT — Hero */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-0">
-          <div style={{ maxWidth: '420px' }}>
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12">
+          <div className="w-full" style={{ maxWidth: '460px' }}>
             {/* Logo */}
             <div
-              className="flex items-center justify-center w-12 h-12 mb-6"
+              className="flex items-center justify-center w-12 h-12 mb-6 lg:mb-8"
               style={{
                 background: 'linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%)',
                 borderRadius: '14px',
@@ -30,31 +30,31 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
               <Youtube size={24} strokeWidth={2} color="#FFFFFF" />
             </div>
 
-            <h1 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '12px', lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: 'clamp(2rem, 6vw, 2.75rem)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '16px', lineHeight: 1.15 }}>
               Discover Trending Niches.
               <br />
               <span style={{ color: 'var(--yt-red)' }}>Reverse-Engineer Success.</span>
             </h1>
 
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '28px' }}>
+            <p style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.05rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '32px' }}>
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
             <button
               onClick={onEnterApp}
-              className="clay-btn-red flex items-center gap-2 px-6 py-3"
-              style={{ fontSize: '0.9rem', fontWeight: 700 }}
+              className="clay-btn-red flex items-center justify-center lg:justify-start gap-2 px-8 py-4 w-full sm:w-auto"
+              style={{ fontSize: '1rem', fontWeight: 700 }}
             >
               Launch App
-              <ArrowRight size={18} strokeWidth={2.5} />
+              <ArrowRight size={20} strokeWidth={2.5} />
             </button>
 
             {/* Footer — only on desktop left side */}
-            <div className="hidden lg:block" style={{ marginTop: '48px' }}>
-              <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>
+            <div className="hidden lg:block" style={{ marginTop: '64px' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>
                 &copy; Illusive Studio
               </p>
-              <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>
                 Developed by: Ian Lester Eclevia
               </p>
             </div>
@@ -62,11 +62,11 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
         </div>
 
         {/* RIGHT — Features + Steps */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-0">
-          <div style={{ maxWidth: '480px', width: '100%' }} className="flex flex-col gap-3">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12">
+          <div style={{ maxWidth: '520px', width: '100%' }} className="flex flex-col gap-4">
             
             {/* Features */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {[
                 { icon: Search, title: 'Niche Discovery', desc: 'Search any topic and see top-performing videos instantly.' },
                 { icon: TrendingUp, title: 'Trend Analysis', desc: 'Track view velocity and emerging topics in real-time.' },
@@ -75,13 +75,13 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
               ].map(feature => {
                 const Icon = feature.icon;
                 return (
-                  <div key={feature.title} className="stat-card flex items-start gap-3" style={{ cursor: 'default' }}>
-                    <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
-                      <Icon size={15} strokeWidth={2} color="var(--yt-red)" />
+                  <div key={feature.title} className="stat-card flex items-start gap-3.5 p-4 sm:p-4.5" style={{ cursor: 'default' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
+                      <Icon size={18} strokeWidth={2} color="var(--yt-red)" />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>{feature.title}</h3>
-                      <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{feature.desc}</p>
+                      <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>{feature.title}</h3>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{feature.desc}</p>
                     </div>
                   </div>
                 );
@@ -97,16 +97,16 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
               ].map((item, i, arr) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.step} style={{ display: 'flex', gap: '12px', padding: '14px 18px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #FF3333, #CC0000)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0, boxShadow: 'var(--shadow-red)' }}>
+                  <div key={item.step} style={{ display: 'flex', gap: '14px', padding: '18px 20px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #FF3333, #CC0000)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0, boxShadow: 'var(--shadow-red)' }}>
                       {item.step}
                     </div>
                     <div>
-                      <div className="flex items-center gap-1.5" style={{ marginBottom: '2px' }}>
-                        <Icon size={13} strokeWidth={2} color="var(--yt-red)" />
-                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{item.title}</span>
+                      <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
+                        <Icon size={14} strokeWidth={2} color="var(--yt-red)" />
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{item.title}</span>
                       </div>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>{item.desc}</p>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>{item.desc}</p>
                     </div>
                   </div>
                 );
@@ -114,8 +114,8 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
             </div>
 
             {/* BYOK */}
-            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-clay)', border: '1px solid var(--border-subtle)', padding: '14px 18px', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-clay)', border: '1px solid var(--border-subtle)', padding: '16px 20px', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
                 🔑 <strong style={{ color: 'var(--text-primary)' }}>Bring Your Own Keys.</strong> Free and open-source. Keys stay in your browser.{' '}
                 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--yt-red)', fontWeight: 600 }}>
                   Get a key →
@@ -124,9 +124,9 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
             </div>
 
             {/* Footer — mobile only */}
-            <div className="lg:hidden text-center" style={{ paddingTop: '4px' }}>
-              <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', margin: '0 0 2px' }}>&copy; Illusive Studio</p>
-              <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>Developed by: Ian Lester Eclevia &nbsp;|&nbsp; v1.0</p>
+            <div className="lg:hidden text-center" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>&copy; Illusive Studio</p>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>Developed by: Ian Lester Eclevia &nbsp;|&nbsp; v1.0</p>
             </div>
           </div>
         </div>
