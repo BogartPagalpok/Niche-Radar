@@ -78,13 +78,16 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
         <div 
           className="flex flex-row items-center justify-between w-full max-w-[420px] pointer-events-auto"
           style={{ 
-            background: 'rgba(23, 23, 23, 0.85)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: isDark ? 'rgba(23, 23, 23, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '24px',
             padding: '6px',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+            boxShadow: isDark 
+              ? '0 12px 40px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)'
+              : '0 12px 40px 0 rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.6)',
+            transition: 'background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease',
           }}
         >
           {MOBILE_ITEMS.map(id => {
@@ -104,9 +107,15 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                   height: '44px',
                   padding: isActive ? '0 16px' : '0',
                   background: isActive 
-                    ? 'linear-gradient(135deg, rgba(255,51,51,0.18) 0%, rgba(204,0,0,0.1) 100%)' 
+                    ? isDark
+                      ? 'linear-gradient(135deg, rgba(255,51,51,0.18) 0%, rgba(204,0,0,0.1) 100%)' 
+                      : 'linear-gradient(135deg, rgba(255,51,51,0.12) 0%, rgba(255,0,0,0.06) 100%)'
                     : 'transparent',
-                  border: isActive ? '1px solid rgba(255,51,51,0.3)' : '1px solid transparent',
+                  border: isActive 
+                    ? isDark 
+                      ? '1px solid rgba(255,51,51,0.3)' 
+                      : '1px solid rgba(255,51,51,0.2)' 
+                    : '1px solid transparent',
                   borderRadius: '18px',
                   cursor: 'pointer',
                   boxSizing: 'border-box',
@@ -117,8 +126,8 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
                 <Icon
                   size={20}
                   strokeWidth={isActive ? 2.5 : 2}
-                  color={isActive ? 'var(--yt-red)' : 'rgba(255, 255, 255, 0.4)'}
-                  style={{ transition: 'colors 200ms ease', flexShrink: 0 }}
+                  color={isActive ? 'var(--yt-red)' : isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
+                  style={{ transition: 'color 200ms ease', flexShrink: 0 }}
                 />
                 {isActive && (
                   <span
@@ -143,18 +152,19 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             style={{
               width: '44px',
               height: '44px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
               borderRadius: '18px',
               cursor: 'pointer',
               boxSizing: 'border-box',
+              transition: 'background-color 200ms ease, border-color 200ms ease',
             }}
             title="Toggle theme"
           >
             {isDark ? (
               <Sun size={18} strokeWidth={2} color="rgba(255, 255, 255, 0.6)" />
             ) : (
-              <Moon size={18} strokeWidth={2} color="rgba(255, 255, 255, 0.6)" />
+              <Moon size={18} strokeWidth={2} color="rgba(0, 0, 0, 0.5)" />
             )}
           </button>
         </div>
