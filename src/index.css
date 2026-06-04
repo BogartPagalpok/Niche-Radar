@@ -62,44 +62,44 @@
 }
 
 .dark {
-  /* High contrast dark mode backdrop so panels can separate */
-  --bg-root: #070707;
+  /* Softer dark backdrop — easy on the eyes */
+  --bg-root: #0D0D0D;
   --bg-panel: #141414;
-  --bg-surface: #1E1E1E;
-  --bg-elevated: #262626;
-  --bg-input: #1A1A1A;
+  --bg-surface: #1A1A1A;
+  --bg-elevated: #222222;
+  --bg-input: #181818;
 
-  /* Border */
-  --border-subtle: rgba(255, 255, 255, 0.02);
-  --border-default: rgba(255, 255, 255, 0.05);
+  /* Visible but gentle borders */
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.12);
 
-  /* Text */
-  --text-primary: #F3F4F6;
-  --text-secondary: #9CA3AF;
-  --text-tertiary: #6B7280;
-  --text-inverse: #070707;
-  --text-accent: #FF0000;
+  /* Warmer, less harsh text */
+  --text-primary: #E6E6E6;
+  --text-secondary: #A0A0A0;
+  --text-tertiary: #707070;
+  --text-inverse: #0D0D0D;
+  --text-accent: #FF3333;
 
-  /* YouTube Accent */
-  --yt-red: #FF0000;
-  --yt-red-hover: #FF3333;
-  --yt-red-muted: rgba(255, 0, 0, 0.1);
+  /* YouTube Accent — slightly softer red */
+  --yt-red: #FF3333;
+  --yt-red-hover: #FF5555;
+  --yt-red-muted: rgba(255, 51, 51, 0.08);
 
   /* Mint Active State */
-  --mint-start: rgba(34,199,138,0.16);
-  --mint-mid: rgba(34,199,138,0.1);
-  --mint-end: rgba(34,199,138,0.06);
-  --mint-text: #3BE2A2;
+  --mint-start: rgba(34,199,138,0.12);
+  --mint-mid: rgba(34,199,138,0.08);
+  --mint-end: rgba(34,199,138,0.04);
+  --mint-text: #4ADE80;
 
-  /* Heavy 3D Claymorphic Shadows — DARK */
-  --shadow-clay-sm: 4px 6px 14px rgba(0,0,0,0.65), -2px -2px 8px rgba(255,255,255,0.02);
-  --shadow-clay: 10px 16px 32px rgba(0,0,0,0.75), -4px -4px 12px rgba(255,255,255,0.03), inset 1px 1px 2px rgba(255,255,255,0.05);
-  --shadow-clay-lg: 16px 26px 50px rgba(0,0,0,0.85), -6px -6px 18px rgba(255,255,255,0.03), inset 2px 2px 4px rgba(255,255,255,0.06);
-  --shadow-inset: inset 6px 6px 14px rgba(0,0,0,0.8), inset -3px -3px 8px rgba(255,255,255,0.03);
-  --shadow-inset-input: inset 4px 4px 8px rgba(0,0,0,0.7), inset -2px -2px 4px rgba(255,255,255,0.02);
-  --shadow-pill-active: 0 6px 24px rgba(34,199,138,0.25), inset 2px 2px 4px rgba(255,255,255,0.08), inset -3px -3px 8px rgba(0,0,0,0.5);
-  --shadow-red: 8px 12px 24px rgba(255,0,0,0.35), -2px -2px 8px rgba(255,255,255,0.03);
+  /* Light 3D Claymorphic Shadows — DARK (gentle, not aggressive) */
+  --shadow-clay-sm: 2px 4px 10px rgba(0,0,0,0.3), -1px -1px 4px rgba(255,255,255,0.02);
+  --shadow-clay: 4px 8px 18px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.02), inset 1px 1px 1px rgba(255,255,255,0.03);
+  --shadow-clay-lg: 8px 14px 28px rgba(0,0,0,0.45), -3px -3px 10px rgba(255,255,255,0.02), inset 1px 1px 2px rgba(255,255,255,0.04);
+  --shadow-inset: inset 2px 2px 6px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.02);
+  --shadow-inset-input: inset 2px 2px 5px rgba(0,0,0,0.35), inset -1px -1px 2px rgba(255,255,255,0.02);
+  --shadow-pill-active: 0 4px 14px rgba(34,199,138,0.15), inset 1px 1px 2px rgba(255,255,255,0.05);
+  --shadow-red: 4px 8px 16px rgba(255,51,51,0.2), -1px -1px 4px rgba(255,255,255,0.02);
 }
 
 /* =============================================
@@ -123,6 +123,22 @@ body {
   transition: background-color var(--transition-slow), color var(--transition-slow);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* =============================================
+   SCROLLBAR
+   ============================================= */
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: 99px;
 }
 
 /* =============================================
@@ -166,7 +182,7 @@ body {
   .clay-input:focus {
     outline: none;
     border-color: var(--yt-red);
-    box-shadow: var(--shadow-inset-input), 0 0 0 3px rgba(255, 0, 0, 0.15);
+    box-shadow: var(--shadow-inset-input), 0 0 0 3px rgba(255, 51, 51, 0.15);
   }
 
   .clay-input::placeholder {
@@ -175,7 +191,7 @@ body {
 
   /* 3D Convex Button — Red */
   .clay-btn-red {
-    background: linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%);
+    background: linear-gradient(135deg, #FF4444 0%, #FF2222 50%, #DD0000 100%);
     border-radius: var(--radius-pill);
     box-shadow: var(--shadow-red);
     color: #FFFFFF;
@@ -194,14 +210,14 @@ body {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 45%;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.22), transparent);
+    background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
     border-radius: var(--radius-pill) var(--radius-pill) 0 0;
     pointer-events: none;
   }
 
   .clay-btn-red:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-red), 0 6px 16px rgba(255,0,0,0.35);
+    box-shadow: var(--shadow-red), 0 6px 16px rgba(255,51,51,0.3);
   }
 
   .clay-btn-red:active {
@@ -232,6 +248,61 @@ body {
     transform: translateY(1px);
   }
 
+  /* Stat Card */
+  .stat-card {
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-clay);
+    border: 1px solid var(--border-subtle);
+    padding: 16px;
+    transition: all var(--transition-base);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-clay-lg);
+    transform: translateY(-1px);
+  }
+
+  /* Tags */
+  .clay-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-pill);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-clay-sm);
+  }
+
+  .clay-tag-red {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: var(--yt-red-muted);
+    border-radius: var(--radius-pill);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--yt-red);
+    border: 1px solid rgba(255, 51, 51, 0.15);
+  }
+
+  .clay-tag-mint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: var(--mint-end);
+    border-radius: var(--radius-pill);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--mint-text);
+  }
+
   /* Pill Active (3D Curved Mint) */
   .pill-active {
     background: linear-gradient(135deg, var(--mint-start) 0%, var(--mint-mid) 50%, var(--mint-end) 100%);
@@ -249,7 +320,7 @@ body {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 50%;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+    background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
     border-radius: var(--radius-pill) var(--radius-pill) 0 0;
     pointer-events: none;
   }
@@ -270,34 +341,24 @@ body {
     box-shadow: var(--shadow-clay-sm);
   }
 
-  /* Sidebar Nav Item Active */
-  .nav-item-active {
-    background: var(--yt-red-muted);
-    border-radius: var(--radius-sm);
-    color: var(--yt-red);
-    font-weight: 700;
-    box-shadow: inset 2px 2px 5px rgba(255,0,0,0.06), var(--shadow-clay-sm);
-    border: 1px solid rgba(255, 0, 0, 0.05);
+  /* Animation */
+  .animate-slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .nav-item {
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    transition: all var(--transition-base);
-    cursor: pointer;
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-}
 
-/* Custom Scroll Utilities to lock spacing symmetry */
-.custom-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.custom-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: var(--bg-surface);
-  border-radius: 99px;
-  box-shadow: var(--shadow-inset);
+  @keyframes pulseRed {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
 }
