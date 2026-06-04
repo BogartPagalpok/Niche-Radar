@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2, TrendingUp, Search } from 'lucide-react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { useTheme } from '../context/ThemeContext';
@@ -20,7 +20,7 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsFetched, setStatsFetched] = useState(false);
   const { isDark } = useTheme();
-  const { savedNiches, saveVideoToNiches, removeVideoFromNiches } = useVideoContext();
+  const { savedNiches, saveVideoToNiches, removeVideoFromNiches, clearSelection } = useVideoContext();
 
   const isBookmarked = savedNiches.some(v => v.video_id === video.video_id);
 
@@ -75,11 +75,23 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
     setLoadingStats(false);
   };
 
-  useEffect(() => {
-    if (video?.channel_id) {
-      handleFetchStats();
-    }
-  }, [video?.channel_id]);
+  const handleExportMarkdown = (): void => {
+    const content = `# Niche Radar Video Blueprint: ${video.title}\n\n` +
+      `- **Video ID:** ${video.video_id}\n` +
+      `- **Channel:** ${video.channel_name} (${video.channel_id})\n` +
+      `- **Views:** ${video.view_count}\n` +
+      `- **Published:** ${video.upload_date}\n\n` +
+      `## Description\n${video.description || 'No description provided.'}`;
+
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `blueprint-${video.video_id}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
   const channelUrl = `https://www.youtube.com/channel/${video.channel_id}`;
@@ -183,6 +195,41 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
             ) : (
               <Youtube size={48} strokeWidth={1.5} color="var(--yt-red)" />
             )}
+          </div>
+
+          {/* Action Row containing: New Search, View Trends, Export Report */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            <button
+              onClick={() => {
+                clearSelection();
+                if (onNavigate) onNavigate('niche-search');
+              }}
+              className="clay-btn-secondary"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
+            >
+              <Search size={14} color="#EF4444" strokeWidth={2.5} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>New Search</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (onNavigate) onNavigate('trend-analysis');
+              }}
+              className="clay-btn-secondary"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
+            >
+              <TrendingUp size={14} color="#3B82F6" strokeWidth={2.5} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>View Trends</span>
+            </button>
+
+            <button
+              onClick={handleExportMarkdown}
+              className="clay-btn-secondary"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
+            >
+              <ExternalLink size={14} color="#10B981" strokeWidth={2.5} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>Export Report</span>
+            </button>
           </div>
 
           {/* Video title */}
@@ -292,13 +339,24 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
           {/* Channel Stats Button / Card */}
           <div>
             {!statsFetched ? (
-              <div
+              <button
+                onClick={handleFetchStats}
+                disabled={loadingStats}
                 className="clay-btn-secondary flex items-center gap-2 px-4 py-3"
-                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center' }}
+                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center', cursor: 'pointer' }}
               >
-                <Loader2 size={14} className="animate-spin" />
-                Loading Channel Stats...
-              </div>
+                {loadingStats ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Loading Channel Stats...
+                  </>
+                ) : (
+                  <>
+                    <BarChart3 size={14} />
+                    View Channel Stats (1 API call)
+                  </>
+                )}
+              </button>
             ) : channelStats && !channelStats.error ? (
               <div className="stat-card">
                 <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
