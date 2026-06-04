@@ -55,14 +55,19 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+const MOBILE_ITEMS: ActiveView[] = ['dashboard', 'niche-search', 'trend-analysis', 'competitor-scout', 'saved-niches'];
+
+const ITEM_MAP = NAV_SECTIONS.flatMap(s => s.items).reduce((acc, item) => {
+  acc[item.id] = item;
+  return acc;
+}, {} as Record<ActiveView, (typeof NAV_SECTIONS)[0]['items'][0]>);
+
 export default function Sidebar({ activeView, onNavigate }: SidebarProps): React.ReactElement {
   const { isDark, toggleTheme } = useTheme();
 
-  const allNavItems = NAV_SECTIONS.flatMap(section => section.items);
-
   return (
     <aside
-      className="w-full h-16 lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
+      className="w-full h-full lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
       style={{
         background: 'var(--bg-panel)',
         borderColor: 'var(--border-subtle)',
@@ -72,9 +77,14 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
           : 'inset -4px 0 16px rgba(0,0,0,0.02)',
       }}
     >
-      {/* MOBILE BOTTOM NAV - Horizontal on small screens */}
-      <div className="flex lg:hidden w-full h-16 flex-row items-center justify-between px-4 gap-0 overflow-x-auto box-border">
-        {allNavItems.map(item => {
+      {/* MOBILE BOTTOM NAV */}
+      <div 
+        className="flex lg:hidden w-full flex-row items-center justify-around overflow-hidden box-border"
+        style={{ padding: '6px 2px' }}
+      >
+        {MOBILE_ITEMS.map(id => {
+          const item = ITEM_MAP[id];
+          if (!item) return null;
           const Icon = item.icon;
           const isActive = activeView === item.id;
 
@@ -82,89 +92,65 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="flex flex-col items-center justify-center gap-0 flex-shrink-0"
+              className="flex flex-col items-center justify-center gap-1 flex-shrink-0"
               style={{
-                width: '48px',
-                height: '48px',
-                background: isActive
-                  ? 'linear-gradient(135deg, rgba(255,51,51,0.2), rgba(255,0,0,0.1))'
-                  : 'transparent',
-                borderRadius: '12px',
-                border: isActive ? '1px solid rgba(255,51,51,0.3)' : '1px solid transparent',
+                minWidth: '56px',
+                padding: '4px 2px',
+                background: 'transparent',
+                borderRadius: '10px',
+                border: 'none',
                 cursor: 'pointer',
                 transition: 'all 200ms ease',
-                padding: '0px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 boxSizing: 'border-box',
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLElement;
-                if (!isActive) {
-                  el.style.background = 'var(--bg-surface)';
-                  el.style.boxShadow = 'var(--shadow-clay-sm)';
-                }
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLElement;
-                if (!isActive) {
-                  el.style.background = 'transparent';
-                  el.style.boxShadow = 'none';
-                }
               }}
               title={item.label}
             >
               <Icon
                 size={20}
-                strokeWidth={2}
+                strokeWidth={isActive ? 2.5 : 2}
                 color={isActive ? 'var(--yt-red)' : 'var(--text-tertiary)'}
-                style={{
-                  transition: 'all 200ms ease',
-                }}
+                style={{ transition: 'all 200ms ease' }}
               />
+              <span
+                style={{
+                  fontSize: '0.6rem',
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? 'var(--yt-red)' : 'var(--text-tertiary)',
+                  lineHeight: 1,
+                }}
+              >
+                {item.label.length > 8 ? item.label.slice(0, 7) + '..' : item.label}
+              </span>
             </button>
           );
         })}
 
-        {/* Theme Toggle - Mobile */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center flex-shrink-0"
-            style={{
-              width: '40px',
-              height: '40px',
-              background: 'var(--bg-surface)',
-              borderRadius: '10px',
-              border: '1px solid var(--border-subtle)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 200ms ease',
-              boxSizing: 'border-box',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.boxShadow = 'var(--shadow-clay-sm)';
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.boxShadow = 'none';
-            }}
-            title="Toggle theme"
-          >
-            {isDark ? (
-              <Sun size={16} strokeWidth={2} color="var(--text-secondary)" />
-            ) : (
-              <Moon size={16} strokeWidth={2} color="var(--text-secondary)" />
-            )}
-          </button>
-        </div>
+        <button
+          onClick={toggleTheme}
+          className="flex flex-col items-center justify-center gap-1 flex-shrink-0"
+          style={{
+            minWidth: '44px',
+            padding: '4px 2px',
+            background: 'transparent',
+            borderRadius: '10px',
+            border: 'none',
+            cursor: 'pointer',
+            boxSizing: 'border-box',
+          }}
+          title="Toggle theme"
+        >
+          {isDark ? (
+            <Sun size={20} strokeWidth={2} color="var(--text-tertiary)" />
+          ) : (
+            <Moon size={20} strokeWidth={2} color="var(--text-tertiary)" />
+          )}
+          <span style={{ fontSize: '0.6rem', fontWeight: 500, color: 'var(--text-tertiary)', lineHeight: 1 }}>
+            Theme
+          </span>
+        </button>
       </div>
 
-      {/* DESKTOP SIDEBAR - Vertical on large screens */}
+      {/* DESKTOP SIDEBAR */}
       <div className="hidden lg:flex flex-col h-full w-full" style={{ boxSizing: 'border-box' }}>
         {/* Logo Section */}
         <div
@@ -343,25 +329,26 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
           ))}
         </nav>
 
-        {/* Theme Toggle & Footer Section */}
+        {/* Footer Section */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.75rem',
-            padding: '1rem 1rem 1.25rem 1rem',
+            gap: '0.5rem',
+            padding: '0.75rem 1rem 1rem 1rem',
             borderTop: '1px solid var(--border-subtle)',
             flexShrink: 0,
             boxSizing: 'border-box',
             width: '100%',
           }}
         >
+          {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             style={{
               width: '100%',
-              height: '40px',
-              minHeight: '40px',
+              height: '36px',
+              minHeight: '36px',
               boxSizing: 'border-box',
               padding: '0rem 0.75rem',
               background: 'var(--bg-surface)',
@@ -400,20 +387,37 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             )}
           </button>
 
+          {/* Credits */}
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ margin: '0px', fontSize: '0.6rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+              &copy; Illusive Studio
+            </p>
+            <p style={{ margin: '0px', marginTop: '1px', fontSize: '0.58rem', color: 'var(--text-tertiary)', fontWeight: 400, opacity: 0.7 }}>
+              Developed by: Ian Lester Eclevia
+            </p>
+          </div>
+
+          {/* Legal Links Placeholder */}
           <div
             style={{
-              fontSize: '0.7rem',
-              color: 'var(--text-tertiary)',
-              textAlign: 'center',
-              fontWeight: 500,
-              paddingTop: '0.25rem',
-              boxSizing: 'border-box',
-              lineHeight: '1.3',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              paddingTop: '2px',
             }}
           >
-            <p style={{ margin: '0px', marginBottom: '2px' }}>Niche Radar v1.0</p>
-            <p style={{ margin: '0px', opacity: 0.7 }}>Powered by YouTube Intelligence</p>
+            {/* Add your legal links here later */}
+            {/* Example:
+            <a href="/privacy" style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="/terms" style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Terms of Service</a>
+            */}
           </div>
+
+          {/* Version */}
+          <p style={{ margin: '0px', fontSize: '0.58rem', color: 'var(--text-tertiary)', textAlign: 'center', opacity: 0.5 }}>
+            Niche Radar v1.0
+          </p>
         </div>
       </div>
     </aside>
