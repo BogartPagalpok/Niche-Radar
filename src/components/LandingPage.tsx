@@ -17,20 +17,8 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
         
         {/* LEFT — Hero */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12">
-          <div className="w-full" style={{ maxWidth: '480px' }}>
-            {/* Logo */}
-            <div
-              className="flex items-center justify-center w-12 h-12 mb-6 lg:mb-8"
-              style={{
-                background: 'linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%)',
-                borderRadius: '14px',
-                boxShadow: 'var(--shadow-red)',
-              }}
-            >
-              <Youtube size={24} strokeWidth={2} color="#FFFFFF" />
-            </div>
-
-            <h1 style={{ fontSize: 'clamp(2.5rem, 7vw, 3.5rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '20px', lineHeight: 1.05 }}>
+          <div className="w-full" style={{ maxWidth: '540px' }}>
+            <h1 style={{ fontSize: 'clamp(2.8rem, 8.5vw, 4.2rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: 1.02 }}>
               Discover Trending Niches.
               <br />
               <span style={{ 
@@ -43,7 +31,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
               </span>
             </h1>
 
-            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '36px', maxWidth: '440px' }}>
+            <p style={{ fontSize: 'clamp(1.05rem, 2.8vw, 1.15rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '480px' }}>
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
@@ -57,7 +45,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
             </button>
 
             {/* Footer — only on desktop left side */}
-            <div className="hidden lg:block" style={{ marginTop: '64px' }}>
+            <div className="hidden lg:block" style={{ marginTop: '80px' }}>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>
                 &copy; Illusive Studio
               </p>
@@ -83,7 +71,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                 const Icon = feature.icon;
                 return (
                   <div key={feature.title} className="stat-card flex items-start gap-3.5 p-4 sm:p-4.5" style={{ cursor: 'default' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifycontent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
                       <Icon size={18} strokeWidth={2} color="var(--yt-red)" />
                     </div>
                     <div>
