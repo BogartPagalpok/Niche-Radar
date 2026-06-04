@@ -12,18 +12,25 @@ export default function LandingPage({ onEnterApp, onGoogleLoginSuccess }: Landin
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleGoogleLogin = () => {
+    // Retrieve the user's BYOK Client ID
+    const userClientId = localStorage.getItem('niche-radar-client-id');
+
+    if (!userClientId) {
+      alert('Please enter your Google OAuth Client ID in App Settings first.');
+      return;
+    }
+
     setIsLoggingIn(true);
     
-    // Check if the global google object from the script tag is available
     if (typeof window !== 'undefined' && (window as any).google) {
       const client = (window as any).google.accounts.oauth2.initTokenClient({
-        client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', // Replace with your actual Client ID
+        client_id: userClientId, // Dynamic ID from user storage
         scope: 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly',
         callback: (response: any) => {
           setIsLoggingIn(false);
           if (response.access_token) {
             onGoogleLoginSuccess(response.access_token);
-            onEnterApp(); // Automatically move into the app once authenticated
+            onEnterApp();
           }
         },
         error_callback: (err: any) => {
@@ -99,23 +106,15 @@ export default function LandingPage({ onEnterApp, onGoogleLoginSuccess }: Landin
               </button>
             </div>
 
-            {/* Footer — balanced distance */}
             <div className="hidden lg:block" style={{ marginTop: '100px' }}>
-              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>
-                &copy; Illusive Studio
-              </p>
-              <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>
-                Developed by: Ian Lester Eclevia
-              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>&copy; Illusive Studio</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>Developed by: Ian Lester Eclevia</p>
             </div>
           </div>
         </div>
 
-        {/* RIGHT — Features + Steps */}
         <div className="w-full lg:w-[45%] flex flex-col justify-center py-6">
           <div style={{ maxWidth: '500px', width: '100%' }} className="flex flex-col gap-4 mx-auto lg:mr-0">
-            
-            {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {[
                 { icon: Search, title: 'Niche Discovery', desc: 'Search any topic and see top-performing videos instantly.' },
@@ -138,12 +137,11 @@ export default function LandingPage({ onEnterApp, onGoogleLoginSuccess }: Landin
               })}
             </div>
 
-            {/* Steps */}
             <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-clay-lg)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
               {[
-                { step: '1', title: 'Sign in with Google', desc: 'Authorize secure, direct access to view your YouTube analytics safely.', icon: Youtube },
-                { step: '2', title: 'Search any niche', desc: 'Enter a topic. Get real YouTube results with channel data and trends.', icon: Search },
-                { step: '3', title: 'Generate AI scripts', desc: 'Click a video. Get ready-to-record scripts and thumbnail prompts.', icon: Zap },
+                { step: '1', title: 'Add your own Client ID', desc: 'Set your Google OAuth Client ID in App Settings.', icon: Settings },
+                { step: '2', title: 'Sign in with Google', desc: 'Authorize secure, direct access to view your YouTube analytics safely.', icon: Youtube },
+                { step: '3', title: 'Search & Generate', desc: 'Reverse-engineer content using your own quota.', icon: Zap },
               ].map((item, i, arr) => {
                 const Icon = item.icon;
                 return (
@@ -161,19 +159,6 @@ export default function LandingPage({ onEnterApp, onGoogleLoginSuccess }: Landin
                   </div>
                 );
               })}
-            </div>
-
-            {/* BYOK */}
-            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-clay)', border: '1px solid var(--border-subtle)', padding: '16px 20px', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                🔑 <strong style={{ color: 'var(--text-primary)' }}>Secure Context.</strong> Tokens are kept exclusively inside your local browser storage context.{' '}
-              </p>
-            </div>
-
-            {/* Footer — mobile only */}
-            <div className="lg:hidden text-center" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '0 0 4px' }}>&copy; Illusive Studio</p>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', opacity: 0.7, margin: 0 }}>Developed by: Ian Lester Eclevia &nbsp;|&nbsp; v1.0</p>
             </div>
           </div>
         </div>
