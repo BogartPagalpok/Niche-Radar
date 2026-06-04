@@ -1,14 +1,27 @@
-import { useState, useCallback, useRef } from 'react';
-import { Search, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useCallback, useRef, useMemo } from 'react';
+import { Search, Loader2, AlertCircle, TrendingUp, Calendar } from 'lucide-react';
 import { type ExtractedVideo, searchYouTubeVideos } from '../services/youtubeScraper';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { VideoCard } from './VideoCard';
 import { useVideoContext } from '../context/VideoContext';
 import { useTheme } from '../context/ThemeContext';
 
+// Helper: Convert relative date strings like "2y ago", "1mo ago", "5d ago" to days
+function parseDaysAgo(relativeTime: string): number {
+  if (!relativeTime) return Infinity;
+  const match = relativeTime.match(/(\d+)\s*(d|day|mo|month|y|year)s?\s*ago/i);
+  if (!match) return 0;
+  const value = parseInt(match[1]);
+  const unit = match[2].toLowerCase();
+  if (unit === 'd' || unit === 'day') return value;
+  if (unit === 'mo' || unit === 'month') return value * 30;
+  if (unit === 'y' || unit === 'year') return value * 365;
+  return 0;
+}
+
 interface SearchState {
   query: string;
-  videos: ExtractedVideo[];
+  rawVideos: ExtractedVideo[];        // original order from scraper
   isLoading: boolean;
   isLoadingMore: boolean;
   error: string | null;
@@ -16,12 +29,15 @@ interface SearchState {
   hasSearched: boolean;
 }
 
+type SortMethod = 'velocity' | 'total';
+type AgeFilter = 30 | 60 | 90 | 365 | 9999;
+
 export default function NicheSearch(): React.ReactElement {
   const { selectedVideo, setSearchedVideos } = useVideoContext();
   const { isDark } = useTheme();
   const [state, setState] = useState<SearchState>({
     query: '',
-    videos: [],
+    rawVideos: [],
     isLoading: false,
     isLoadingMore: false,
     error: null,
@@ -29,7 +45,50 @@ export default function NicheSearch(): React.ReactElement {
     hasSearched: false,
   });
 
+  const [sortMethod, setSortMethod] = useState<SortMethod>('velocity');
+  const [maxAgeDays, setMaxAgeDays] = useState<AgeFilter>(90);
+
   const loadMoreCountRef = useRef<number>(0);
+
+  // Process raw videos: calculate days since upload, views per day, filter by age, sort
+  const processedVideos = useMemo(() => {
+    if (!state.hasSearched) return [];
+
+    // First map to enriched objects
+    const enriched = state.rawVideos.map(video => {
+      const daysSinceUpload = parseDaysAgo(video.uploadedDate);
+      const viewsPerDay = daysSinceUpload > 0 && daysSinceUpload !== Infinity
+        ? video.viewCount / daysSinceUpload
+        : video.viewCount; // fallback: treat as 1 day? Actually if no date, keep high velocity
+      return { ...video, daysSinceUpload, viewsPerDay };
+    });
+
+    // Filter by max age
+    const filtered = enriched.filter(video => video.daysSinceUpload <= maxAgeDays);
+
+    // Sort
+    const sorted = filtered.sort((a, b) => {
+      if (sortMethod === 'velocity') {
+        return b.viewsPerDay - a.viewsPerDay;
+      } else {
+        return b.viewCount - a.viewCount;
+      }
+    });
+
+    return sorted;
+  }, [state.rawVideos, state.hasSearched, sortMethod, maxAgeDays]);
+
+  // Also update the context with filtered+sorted videos for parent components
+  const updateContextVideos = useCallback((videos: ExtractedVideo[]) => {
+    setSearchedVideos(videos);
+  }, [setSearchedVideos]);
+
+  // When processedVideos changes, update context (but avoid infinite loops)
+  useMemo(() => {
+    if (state.hasSearched) {
+      updateContextVideos(processedVideos);
+    }
+  }, [processedVideos, state.hasSearched, updateContextVideos]);
 
   const performSearch = useCallback(
     async (query: string, continuation: string | null = null): Promise<void> => {
@@ -51,20 +110,17 @@ export default function NicheSearch(): React.ReactElement {
             isLoading: false,
             hasSearched: true,
             error: 'No videos found. Try a different search term.',
-            videos: [],
+            rawVideos: [],
           }));
-          setSearchedVideos([]);
+          updateContextVideos([]);
           return;
         }
 
         setState(prev => {
-          const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
-          
-          setTimeout(() => setSearchedVideos(totalVideos), 0);
-
+          const totalRawVideos = isInitialSearch ? parsedVideos : [...prev.rawVideos, ...parsedVideos];
           return {
             ...prev,
-            videos: totalVideos,
+            rawVideos: totalRawVideos,
             continuation: result.continuation,
             isLoading: false,
             isLoadingMore: false,
@@ -84,7 +140,7 @@ export default function NicheSearch(): React.ReactElement {
         }));
       }
     },
-    [setSearchedVideos]
+    [updateContextVideos]
   );
 
   const handleSearch = useCallback((): void => {
@@ -101,7 +157,6 @@ export default function NicheSearch(): React.ReactElement {
     }
 
     loadMoreCountRef.current += 1;
-
     performSearch(state.query, state.continuation);
   }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, performSearch]);
 
@@ -215,6 +270,79 @@ export default function NicheSearch(): React.ReactElement {
         </div>
       </div>
 
+      {/* Sorting & Filtering Controls */}
+      {state.hasSearched && state.rawVideos.length > 0 && (
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '4px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'var(--bg-surface)',
+              borderRadius: '40px',
+              padding: '6px 12px',
+              boxShadow: 'var(--shadow-clay-sm)',
+            }}
+          >
+            <TrendingUp size={14} strokeWidth={2} color="var(--text-secondary)" />
+            <select
+              value={sortMethod}
+              onChange={(e) => setSortMethod(e.target.value as SortMethod)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="velocity">🔥 Most Views per Day (Velocity)</option>
+              <option value="total">📊 Most Total Views</option>
+            </select>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'var(--bg-surface)',
+              borderRadius: '40px',
+              padding: '6px 12px',
+              boxShadow: 'var(--shadow-clay-sm)',
+            }}
+          >
+            <Calendar size={14} strokeWidth={2} color="var(--text-secondary)" />
+            <select
+              value={maxAgeDays}
+              onChange={(e) => setMaxAgeDays(Number(e.target.value) as AgeFilter)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value={30}>Last 30 days only</option>
+              <option value={60}>Last 60 days</option>
+              <option value={90}>Last 90 days</option>
+              <option value={365}>Last year</option>
+              <option value={9999}>All time</option>
+            </select>
+          </div>
+
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', alignSelf: 'center' }}>
+            {processedVideos.length} video{processedVideos.length !== 1 ? 's' : ''} shown
+            {state.rawVideos.length !== processedVideos.length && ` (${state.rawVideos.length - processedVideos.length} filtered out)`}
+          </div>
+        </div>
+      )}
+
       {/* Error message */}
       {state.error && (
         <div
@@ -289,7 +417,7 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {state.hasSearched && state.videos.length === 0 && !state.isLoading && (
+        {state.hasSearched && processedVideos.length === 0 && !state.isLoading && (
           <div
             style={{
               display: 'flex',
@@ -303,12 +431,14 @@ export default function NicheSearch(): React.ReactElement {
           >
             <AlertCircle size={32} strokeWidth={1.5} color="var(--text-tertiary)" />
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              No results found
+              {state.rawVideos.length > 0
+                ? `No videos within ${maxAgeDays === 9999 ? 'all time' : `last ${maxAgeDays} days`}. Try increasing age filter.`
+                : 'No results found'}
             </p>
           </div>
         )}
 
-        {state.videos.map(video => (
+        {processedVideos.map(video => (
           <VideoCard
             key={video.video_id}
             video={video}
@@ -317,8 +447,8 @@ export default function NicheSearch(): React.ReactElement {
         ))}
 
         {/* Infinite scroll sentinel */}
-        {state.hasSearched && state.videos.length > 0 && state.continuation && (
-          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifycontent: 'center' }}>
+        {state.hasSearched && state.rawVideos.length > 0 && state.continuation && (
+          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {state.isLoadingMore && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Loader2
@@ -336,7 +466,7 @@ export default function NicheSearch(): React.ReactElement {
         )}
 
         {/* End of results indicator */}
-        {state.hasSearched && state.videos.length > 0 && !state.continuation && (
+        {state.hasSearched && state.rawVideos.length > 0 && !state.continuation && (
           <div
             style={{
               textAlign: 'center',
