@@ -79,8 +79,13 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
     >
       {/* MOBILE BOTTOM NAV */}
       <div 
-        className="flex lg:hidden w-full flex-row items-center justify-around overflow-hidden box-border"
-        style={{ padding: '6px 2px' }}
+        className="flex lg:hidden w-full flex-row items-center justify-between overflow-x-auto overflow-y-hidden box-border custom-scroll"
+        style={{ 
+          padding: '8px 12px',
+          gap: '8px',
+          borderTop: '1px solid var(--border-subtle)',
+          scrollbarWidth: 'none'
+        }}
       >
         {MOBILE_ITEMS.map(id => {
           const item = ITEM_MAP[id];
@@ -92,34 +97,42 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="flex flex-col items-center justify-center gap-1 flex-shrink-0"
+              className="flex flex-row items-center justify-center gap-2 flex-shrink-0 transition-all duration-200"
               style={{
-                minWidth: '56px',
-                padding: '4px 2px',
-                background: 'transparent',
-                borderRadius: '10px',
-                border: 'none',
+                flex: isActive ? '1.5 1 0%' : '1 1 0%',
+                minWidth: isActive ? '110px' : '44px',
+                maxWidth: isActive ? '140px' : '52px',
+                padding: '10px 8px',
+                background: isActive 
+                  ? 'linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,0,0,0.08))' 
+                  : 'transparent',
+                border: isActive ? '1px solid rgba(255,51,51,0.25)' : '1px solid transparent',
+                borderRadius: '12px',
                 cursor: 'pointer',
-                transition: 'all 200ms ease',
                 boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
               title={item.label}
             >
               <Icon
-                size={20}
+                size={18}
                 strokeWidth={isActive ? 2.5 : 2}
-                color={isActive ? 'var(--yt-red)' : 'var(--text-tertiary)'}
-                style={{ transition: 'all 200ms ease' }}
+                color={isActive ? 'var(--yt-red)' : 'var(--text-secondary)'}
+                style={{ transition: 'all 200ms ease', flexShrink: 0 }}
               />
               <span
                 style={{
-                  fontSize: '0.6rem',
+                  fontSize: '0.75rem',
                   fontWeight: isActive ? 700 : 500,
-                  color: isActive ? 'var(--yt-red)' : 'var(--text-tertiary)',
+                  color: isActive ? 'var(--yt-red)' : 'var(--text-secondary)',
                   lineHeight: 1,
+                  display: isActive ? 'block' : 'none',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
                 }}
               >
-                {item.label.length > 8 ? item.label.slice(0, 7) + '..' : item.label}
+                {item.label}
               </span>
             </button>
           );
@@ -127,26 +140,24 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
 
         <button
           onClick={toggleTheme}
-          className="flex flex-col items-center justify-center gap-1 flex-shrink-0"
+          className="flex items-center justify-center flex-shrink-0"
           style={{
-            minWidth: '44px',
-            padding: '4px 2px',
-            background: 'transparent',
-            borderRadius: '10px',
-            border: 'none',
+            width: '40px',
+            height: '40px',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '12px',
             cursor: 'pointer',
             boxSizing: 'border-box',
+            marginLeft: 'auto',
           }}
           title="Toggle theme"
         >
           {isDark ? (
-            <Sun size={20} strokeWidth={2} color="var(--text-tertiary)" />
+            <Sun size={18} strokeWidth={2} color="var(--text-secondary)" />
           ) : (
-            <Moon size={20} strokeWidth={2} color="var(--text-tertiary)" />
+            <Moon size={18} strokeWidth={2} color="var(--text-secondary)" />
           )}
-          <span style={{ fontSize: '0.6rem', fontWeight: 500, color: 'var(--text-tertiary)', lineHeight: 1 }}>
-            Theme
-          </span>
         </button>
       </div>
 
@@ -407,11 +418,6 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
               paddingTop: '2px',
             }}
           >
-            {/* Add your legal links here later */}
-            {/* Example:
-            <a href="/privacy" style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Privacy Policy</a>
-            <a href="/terms" style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Terms of Service</a>
-            */}
           </div>
 
           {/* Version */}
