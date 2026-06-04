@@ -55,6 +55,7 @@ interface YouTubeVideoRenderer {
   channelId?: string;
 }
 
+// Extended to include reelItemRenderer (Shorts)
 interface YouTubeInitialData {
   contents?: {
     twoColumnSearchResultsRenderer?: {
@@ -64,6 +65,7 @@ interface YouTubeInitialData {
             itemSectionRenderer?: {
               contents?: Array<{
                 videoRenderer?: YouTubeVideoRenderer;
+                reelItemRenderer?: any; // Shorts
               }>;
             };
           }>;
@@ -80,6 +82,7 @@ interface YouTubeInitialData {
     appendContinuationItemsAction?: {
       continuationItems?: Array<{
         videoRenderer?: YouTubeVideoRenderer;
+        reelItemRenderer?: any;
         continuationItemRenderer?: {
           continuationEndpoint?: {
             continuationCommand?: {
@@ -204,6 +207,55 @@ function extractVideoFromRenderer(renderer: YouTubeVideoRenderer): ExtractedVide
   }
 }
 
+// Extract Shorts from reelItemRenderer
+function extractShortFromRenderer(item: any): ExtractedVideo | null {
+  try {
+    const renderer = item.reelItemRenderer;
+    if (!renderer) return null;
+
+    const videoId = renderer.videoId || renderer.reelId;
+    if (!videoId) return null;
+
+    const title = renderer.title?.runs?.[0]?.text || 'Untitled Short';
+
+    let viewCountText = '';
+    if (renderer.viewCountText?.simpleText) {
+      viewCountText = renderer.viewCountText.simpleText;
+    } else if (renderer.viewCountText?.runs) {
+      viewCountText = renderer.viewCountText.runs.map((r: any) => r.text).join('');
+    }
+    const viewCount = extractViewCount(viewCountText);
+
+    const publishedTimeText = renderer.publishedTimeText?.simpleText || '';
+    const uploadDate = parsePublishDate(publishedTimeText);
+
+    const thumbnailUrl = renderer.thumbnail?.thumbnails?.[0]?.url || '';
+
+    let channelName = '';
+    if (renderer.shortBylineText?.simpleText) {
+      channelName = renderer.shortBylineText.simpleText;
+    } else if (renderer.shortBylineText?.runs) {
+      channelName = renderer.shortBylineText.runs.map((r: any) => r.text).join('');
+    }
+
+    const channelId = renderer.channelId || '';
+
+    return {
+      video_id: videoId,
+      title: title,
+      view_count: viewCount,
+      description: '',
+      duration: '0:15', // Shorts are under 60 seconds
+      upload_date: uploadDate,
+      thumbnail_url: thumbnailUrl,
+      channel_name: channelName,
+      channel_id: channelId,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function extractVideosFromInitialData(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
   const videos: ExtractedVideo[] = [];
   let continuation: string | null = null;
@@ -217,6 +269,12 @@ function extractVideosFromInitialData(data: YouTubeInitialData): { videos: Extra
           for (const item of section.itemSectionRenderer.contents) {
             if (item.videoRenderer) {
               const extracted = extractVideoFromRenderer(item.videoRenderer);
+              if (extracted) {
+                videos.push(extracted);
+              }
+            }
+            if (item.reelItemRenderer) {
+              const extracted = extractShortFromRenderer(item);
               if (extracted) {
                 videos.push(extracted);
               }
@@ -250,7 +308,14 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
               if (extracted) {
                 videos.push(extracted);
               }
-            } else if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
+            }
+            if (item.reelItemRenderer) {
+              const extracted = extractShortFromRenderer(item);
+              if (extracted) {
+                videos.push(extracted);
+              }
+            }
+            if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
               continuation = item.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
             }
           }
@@ -291,12 +356,11 @@ async function fetchWithProxy(url: string): Promise<string> {
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
-    let htmlContent: string;
-
     if (!continuation) {
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%3D%3D`;
+      // Removed &sp=EgIQAQ%3D%3D to include both videos and shorts
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 
-      htmlContent = await fetchWithProxy(searchUrl);
+      const htmlContent = await fetchWithProxy(searchUrl);
 
       const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
       if (!match || !match[1]) {
