@@ -67,10 +67,10 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
 
   return (
     <>
-      {/* MOBILE BOTTOM NAV */}
-      <div className="flex lg:hidden w-full items-center justify-center p-0 fixed bottom-4 left-0 right-0 z-50 bg-transparent">
+      {/* MOBILE BOTTOM NAV — only visible on small screens */}
+      <div className="lg:hidden fixed bottom-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <div 
-          className="flex flex-row items-center justify-between w-[calc(100%-32px)] sm:w-[calc(100%-40px)] max-w-[420px]"
+          className="flex flex-row items-center justify-between w-[calc(100%-32px)] sm:w-[calc(100%-40px)] max-w-[420px] pointer-events-auto"
           style={{ 
             background: isDark ? 'rgba(23, 23, 23, 0.85)' : 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(16px)',
