@@ -4,6 +4,7 @@ import { VideoProvider, useVideoContext } from './context/VideoContext';
 import { LoadingProvider } from './context/LoadingContext';
 import { checkProxyHealth } from './services/proxyHealthCheck';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import LandingPage from './components/LandingPage';
 import Sidebar, { type ActiveView } from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import NicheSearch from './components/NicheSearch';
@@ -21,7 +22,6 @@ function RightPanelContent({ view, onClose }: { view: ActiveView; onClose?: () =
   if (selectedVideo) {
     return (
       <div className="relative h-full">
-        {/* Close button for mobile */}
         {onClose && (
           <button
             onClick={onClose}
@@ -78,6 +78,9 @@ function AppShell(): React.ReactElement {
   const [proxyReady, setProxyReady] = useState(false);
   const [proxyError, setProxyError] = useState<string | null>(null);
   const [showMobileDetail, setShowMobileDetail] = useState(false);
+  const [showLanding, setShowLanding] = useState(() => {
+    return localStorage.getItem('niche-radar-landing-seen') !== 'true';
+  });
   const { isDark } = useTheme();
   const { searchedVideos, selectVideo, selectedVideo, clearSelection } = useVideoContext();
 
@@ -94,7 +97,6 @@ function AppShell(): React.ReactElement {
     })();
   }, []);
 
-  // Show detail panel on mobile when video is selected
   useEffect(() => {
     if (selectedVideo && window.innerWidth < 1024) {
       setShowMobileDetail(true);
@@ -109,6 +111,11 @@ function AppShell(): React.ReactElement {
 
   const handleCloseMobileDetail = () => {
     setShowMobileDetail(false);
+  };
+
+  const handleEnterApp = () => {
+    localStorage.setItem('niche-radar-landing-seen', 'true');
+    setShowLanding(false);
   };
 
   const renderLeftContent = (): React.ReactElement => {
@@ -132,18 +139,20 @@ function AppShell(): React.ReactElement {
     }
   };
 
+  // Show landing page on first visit
+  if (showLanding) {
+    return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
-      {/* SIDEBAR */}
       <div className="w-full h-16 fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border">
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
       <div className="flex flex-col lg:flex-row w-full flex-1 min-w-0 gap-4 lg:gap-6 p-4 lg:p-6 pb-24 lg:pb-6 lg:h-screen box-border">
-        {/* LEFT COLUMN - Full width on mobile */}
         <div className={`w-full lg:w-[40%] min-w-0 h-auto lg:h-full flex flex-col box-border ${showMobileDetail ? 'hidden lg:flex' : 'flex'}`}>
           <div
             className="flex-1 flex flex-col relative rounded-3xl overflow-hidden"
@@ -173,9 +182,7 @@ function AppShell(): React.ReactElement {
           </div>
         </div>
 
-        {/* RIGHT COLUMN - Shown on desktop, or as overlay on mobile when video selected */}
         <div className={`w-full lg:w-[60%] min-w-0 h-auto lg:h-full flex flex-col gap-4 lg:gap-6 box-border ${showMobileDetail ? 'flex' : 'hidden lg:flex'}`}>
-          {/* Mobile back button */}
           {showMobileDetail && (
             <button
               onClick={handleCloseMobileDetail}
