@@ -13,12 +13,27 @@ import CompetitorScout from './components/CompetitorScout';
 import SavedNiches from './components/SavedNiches';
 import AppSettings from './components/AppSettings';
 import { VideoDetailView } from './components/VideoDetailView';
+import { X } from 'lucide-react';
 
-function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
+function RightPanelContent({ view, onClose }: { view: ActiveView; onClose?: () => void }): React.ReactElement {
   const { selectedVideo } = useVideoContext();
 
   if (selectedVideo) {
-    return <VideoDetailView video={selectedVideo} />;
+    return (
+      <div className="relative h-full">
+        {/* Close button for mobile */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 z-10 p-2 rounded-xl bg-black/50 text-white lg:hidden"
+            style={{ backdropFilter: 'blur(8px)' }}
+          >
+            <X size={18} />
+          </button>
+        )}
+        <VideoDetailView video={selectedVideo} />
+      </div>
+    );
   }
 
   return (
@@ -46,7 +61,7 @@ function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
           }}
         />
       </div>
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ textAlign: 'center' }} className="px-4">
         <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '8px' }}>
           Select a Video
         </p>
@@ -62,8 +77,9 @@ function AppShell(): React.ReactElement {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [proxyReady, setProxyReady] = useState(false);
   const [proxyError, setProxyError] = useState<string | null>(null);
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
   const { isDark } = useTheme();
-  const { searchedVideos, selectVideo } = useVideoContext();
+  const { searchedVideos, selectVideo, selectedVideo, clearSelection } = useVideoContext();
 
   useEffect(() => {
     (async () => {
@@ -78,6 +94,23 @@ function AppShell(): React.ReactElement {
     })();
   }, []);
 
+  // Show detail panel on mobile when video is selected
+  useEffect(() => {
+    if (selectedVideo && window.innerWidth < 1024) {
+      setShowMobileDetail(true);
+    }
+  }, [selectedVideo]);
+
+  const handleSelectVideo = (video: typeof selectedVideo) => {
+    if (video) {
+      selectVideo(video);
+    }
+  };
+
+  const handleCloseMobileDetail = () => {
+    setShowMobileDetail(false);
+  };
+
   const renderLeftContent = (): React.ReactElement => {
     switch (activeView) {
       case 'dashboard':
@@ -89,7 +122,7 @@ function AppShell(): React.ReactElement {
       case 'keyword-clusters':
         return <KeywordClusters />;
       case 'competitor-scout':
-        return <CompetitorScout videos={searchedVideos} onSelectVideo={selectVideo} />;
+        return <CompetitorScout videos={searchedVideos} onSelectVideo={handleSelectVideo} />;
       case 'saved-niches':
         return <SavedNiches />;
       case 'settings':
@@ -101,14 +134,17 @@ function AppShell(): React.ReactElement {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
+      {/* SIDEBAR */}
       <div className="w-full h-16 fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border">
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
       </div>
 
+      {/* MAIN CONTENT */}
       <div className="flex flex-col lg:flex-row w-full flex-1 min-w-0 gap-4 lg:gap-6 p-4 lg:p-6 pb-24 lg:pb-6 lg:h-screen box-border">
-        <div className="w-full lg:w-[40%] min-w-0 h-auto lg:h-full flex flex-col box-border">
+        {/* LEFT COLUMN - Full width on mobile */}
+        <div className={`w-full lg:w-[40%] min-w-0 h-auto lg:h-full flex flex-col box-border ${showMobileDetail ? 'hidden lg:flex' : 'flex'}`}>
           <div
             className="flex-1 flex flex-col relative rounded-3xl overflow-hidden"
             style={{
@@ -131,15 +167,33 @@ function AppShell(): React.ReactElement {
                 zIndex: 1,
               }}
             />
-            <div className="custom-scroll flex-1 overflow-y-auto p-5 sm:p-6 lg:p-8">
+            <div className="custom-scroll flex-1 overflow-y-auto p-4 sm:p-5 lg:p-8">
               {renderLeftContent()}
             </div>
           </div>
         </div>
 
-        <div className="w-full lg:w-[60%] min-w-0 h-auto lg:h-full flex flex-col gap-4 lg:gap-6 box-border">
+        {/* RIGHT COLUMN - Shown on desktop, or as overlay on mobile when video selected */}
+        <div className={`w-full lg:w-[60%] min-w-0 h-auto lg:h-full flex flex-col gap-4 lg:gap-6 box-border ${showMobileDetail ? 'flex' : 'hidden lg:flex'}`}>
+          {/* Mobile back button */}
+          {showMobileDetail && (
+            <button
+              onClick={handleCloseMobileDetail}
+              className="lg:hidden flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold"
+              style={{
+                background: 'var(--bg-panel)',
+                color: 'var(--text-primary)',
+                boxShadow: 'var(--shadow-clay)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <X size={16} />
+              Back to results
+            </button>
+          )}
+
           <div
-            className="flex-shrink-0 rounded-3xl px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between relative overflow-hidden"
+            className="flex-shrink-0 rounded-3xl px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between relative overflow-hidden hidden lg:flex"
             style={{
               background: 'var(--bg-panel)',
               boxShadow: isDark
@@ -201,8 +255,8 @@ function AppShell(): React.ReactElement {
                 : 'inset 0 1px 0 rgba(255,255,255,1), 0 20px 40px rgba(0,0,0,0.06)',
             }}
           >
-            <div className="custom-scroll flex-1 overflow-y-auto p-5 sm:p-6 lg:p-8">
-              <RightPanelContent view={activeView} />
+            <div className="custom-scroll flex-1 overflow-y-auto p-4 sm:p-5 lg:p-8">
+              <RightPanelContent view={activeView} onClose={handleCloseMobileDetail} />
             </div>
           </div>
         </div>
