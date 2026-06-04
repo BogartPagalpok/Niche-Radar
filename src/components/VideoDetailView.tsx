@@ -4,7 +4,6 @@ import { type ExtractedVideo } from '../services/youtubeScraper';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { useTheme } from '../context/ThemeContext';
 import { useVideoContext } from '../context/VideoContext';
-import { fetchChannelStats, type ChannelStats } from '../services/channelStats';
 
 interface VideoDetailViewProps {
   video: ExtractedVideo;
@@ -15,7 +14,7 @@ type TabType = 'details' | 'analytics';
 export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactElement {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
-  const [channelStats, setChannelStats] = useState<ChannelStats | null>(null);
+  const [channelStats, setChannelStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsFetched, setStatsFetched] = useState(false);
   const { isDark } = useTheme();
@@ -37,15 +36,34 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
     }
   };
 
-  const handleFetchStats = (): void => {
+  const handleFetchStats = async (): Promise<void> => {
     if (!video?.channel_id || statsFetched) return;
     setLoadingStats(true);
-    fetchChannelStats(video.channel_id)
-      .then(data => {
-        setChannelStats(data);
+    try {
+      const token = localStorage.getItem('niche-radar-google-token');
+      if (!token) {
+        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add Google token in Settings' });
         setStatsFetched(true);
-      })
-      .finally(() => setLoadingStats(false));
+        setLoadingStats(false);
+        return;
+      }
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.items?.length) {
+        const s = data.items[0].statistics;
+        const sn = data.items[0].snippet;
+        const f = (n: string) => { const x = parseInt(n); return x >= 1000000 ? (x/1000000).toFixed(1)+'M' : x >= 1000 ? (x/1000).toFixed(1)+'K' : n; };
+        setChannelStats({ subscribers: f(s.subscriberCount), totalViews: f(s.viewCount), videoCount: f(s.videoCount), country: sn.country || 'N/A' });
+      } else {
+        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: data.error?.message || 'Not found' });
+      }
+    } catch {
+      setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Failed' });
+    }
+    setStatsFetched(true);
+    setLoadingStats(false);
   };
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
