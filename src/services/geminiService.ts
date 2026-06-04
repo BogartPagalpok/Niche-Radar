@@ -27,24 +27,65 @@ export async function generateScriptPrompt(video: ExtractedVideo): Promise<Gemin
     };
   }
 
-  const userPrompt = `You are an expert YouTube content strategist and scriptwriter. Analyze this video and create a detailed, production-ready script replication prompt that content creators can use to create similar high-performing videos.
+  const userPrompt = `You are an expert YouTube scriptwriter. Analyze this successful video, extract its RETENTION BLUEPRINT (hook strategy, pacing pattern, emotional beats, information density), then write a COMPLETELY NEW original script on the SAME TOPIC using that same blueprint.
 
-Video Title: ${video.title}
-Channel: ${video.channel_name}
-Views: ${video.view_count}
-Upload Date: ${video.upload_date}
-Duration: ${video.duration}
-Description: ${video.description}
+DO NOT transcribe or copy the original. The original is only a reference for what retention techniques work. Create fresh, original narration that would achieve similar viewer retention and engagement.
 
-Generate a comprehensive, copyable script prompt that includes:
-1. Target audience and tone
-2. Hook strategy for the first 5 seconds
-3. Core value proposition and key points
-4. Pacing and retention techniques
-5. Call-to-action strategy
-6. Production notes and visual recommendations
+VIDEO DATA:
+- Title: ${video.title}
+- Channel: ${video.channel_name}
+- Views: ${video.view_count}
+- Upload Date: ${video.upload_date}
+- Duration: ${video.duration}
+- Description: ${video.description}
 
-Format this as a detailed prompt that another content creator could use to produce a similar video. Be specific and actionable.`;
+OUTPUT A FULL ORIGINAL SCRIPT WITH ALL OF THESE SECTIONS. WRITE REAL NARRATION TEXT FOR EVERY SECTION:
+
+1. RETENTION BLUEPRINT ANALYSIS (3-4 sentences)
+What made THIS video work? Identify the hook technique, pacing rhythm, emotional curve, and information delivery pattern that drove ${video.view_count} views. This is the formula you will apply to the new script.
+
+2. TARGET AUDIENCE & TONE (2-3 sentences)
+Who is this for? What emotional energy should the creator use? Match the original's energy.
+
+3. THE HOOK (First 5-15 seconds)
+Write COMPLETELY ORIGINAL opening lines using the SAME hook technique as the original. Start with a bold claim, shocking stat, provocative question, or cliffhanger. Include notes like [B-ROLL: action shot] or [TEXT ON SCREEN: "$1M mistake"]. This must grab attention instantly.
+
+4. INTRO & VALUE PROPOSITION (0:15-1:00)
+Introduce the topic with fresh framing. Answer "Why should the viewer care RIGHT NOW?" Build curiosity. Tease what's coming. Write every word.
+
+5. THE BIG REVEAL / MAIN THESIS (1:00-2:00)
+Deliver the core message. If the original uses a numbered list format, use the SAME structure but with NEW content. Be hyper-specific — use real names, numbers, dates, statistics, and examples. Write the full narration.
+
+6. KEY POINTS DEEP DIVE (Main body)
+For EACH key point, provide:
+- A clear section heading
+- 3-5 sentences of original narration
+- At least one concrete example, case study, or story
+- Visual suggestions [in brackets]
+Write full narration for every point. Do not skip. Do not summarize.
+
+7. PATTERN INTERRUPT / RETENTION HOOK (Mid-video)
+Write a 10-20 second segment that re-engages viewers. Use the SAME pattern interrupt technique as the original but with new words. Reference back to the hook.
+
+8. CLIMAX / STRONGEST POINT
+Save the most impressive reveal for near the end. Match the original's emotional peak intensity. Make it quotable.
+
+9. OUTRO & CALL TO ACTION
+Write original closing words with a specific CTA. Include what video to watch next and why.
+
+10. PRODUCTION NOTES
+B-roll types, text overlays, music style, props, color grading.
+
+11. BONUS: 5 ORIGINAL TITLE VARIATIONS
+Different angles: curiosity gap, how-to, listicle, controversial, emotional.
+
+CRITICAL INSTRUCTIONS:
+- Do NOT transcribe or copy the original video. Create COMPLETELY NEW original content.
+- Extract the STRUCTURAL PATTERN (hook style, pacing, emotional beats) and apply it to fresh narration.
+- Every section must contain complete, original narration text. No placeholders.
+- Be specific. Use numbers, names, examples. No vague generalizations.
+- The final output should fill a ${video.duration} video.
+- Do not cut off mid-sentence. Complete every thought fully.`;
 
   try {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
@@ -61,7 +102,7 @@ Format this as a detailed prompt that another content creator could use to produ
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1500,
+        maxOutputTokens: 8192,
       },
     };
 
@@ -80,7 +121,12 @@ Format this as a detailed prompt that another content creator could use to produ
           message: 'Gemini API key is invalid. Please update in App Settings.',
         };
       }
-
+      if (response.status === 429) {
+        return {
+          code: 'RATE_LIMITED',
+          message: 'Gemini API quota exceeded. Try again in a minute, or use an AI Studio key for higher limits.',
+        };
+      }
       return {
         code: 'GEMINI_API_ERROR',
         message: `Gemini API error: ${response.statusText}`,
@@ -128,23 +174,37 @@ export async function generateThumbnailPrompt(video: ExtractedVideo): Promise<Ge
     };
   }
 
-  const userPrompt = `You are an expert YouTube thumbnail designer and AI prompt engineer. Analyze this video and reverse-engineer a detailed, word-weighted prompt optimized for image generators like Midjourney, DALL-E, or Stable Diffusion.
+  const userPrompt = `You are an expert YouTube thumbnail designer and AI image prompt engineer. Analyze this video's thumbnail strategy, then create 3 ORIGINAL Midjourney prompts for NEW thumbnails that would achieve similar or better CTR.
 
-Video Title: ${video.title}
+VIDEO DATA:
+Title: ${video.title}
 Channel: ${video.channel_name}
 Views: ${video.view_count}
 Description: ${video.description}
 
-Create a comprehensive Midjourney/image generator prompt that captures the visual essence and design principles of a high-performing thumbnail for this content. Include:
+OUTPUT 3 ORIGINAL THUMBNAIL CONCEPTS:
 
-1. Main subject/focal point description
-2. Color palette and contrast strategy
-3. Typography and text overlay strategy
-4. Composition and layout principles
-5. Emotional tone and viewer psychology
-6. Technical rendering details
+THUMBNAIL CONCEPT 1 - FACIAL REACTION / EMOTION
+Style: Close-up expressive face, strong emotion (shock, excitement, fear, amazement)
+Midjourney prompt: [write the complete prompt]
+Why this works for CTR: [2 sentences]
+Best for: [what type of viewer this attracts]
 
-Format as a single, detailed prompt that could be directly used with Midjourney or similar tools. Include specific artistic terms, style references, and technical parameters. Optimize for viewer attention and click-through rate.`;
+THUMBNAIL CONCEPT 2 - COMPARISON / BEFORE-AFTER
+Style: Split screen or side-by-side showing contrast
+Midjourney prompt: [write the complete prompt]
+Why this works for CTR: [2 sentences]
+Best for: [what type of viewer this attracts]
+
+THUMBNAIL CONCEPT 3 - CURIOSITY GAP / MYSTERY
+Style: Something partially hidden, unusual, or unexplained that makes you need to click
+Midjourney prompt: [write the complete prompt]
+Why this works for CTR: [2 sentences]
+Best for: [what type of viewer this attracts]
+
+Include in every Midjourney prompt: --ar 16:9 --style raw --v 6.1
+
+Make prompts specific. Include: subject description, expression, lighting, colors, background, camera angle, mood. Do not include text in the image prompts — text overlays are added in post-production.`;
 
   try {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
@@ -161,7 +221,7 @@ Format as a single, detailed prompt that could be directly used with Midjourney 
       ],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 1200,
+        maxOutputTokens: 4096,
       },
     };
 
@@ -180,7 +240,12 @@ Format as a single, detailed prompt that could be directly used with Midjourney 
           message: 'Gemini API key is invalid. Please update in App Settings.',
         };
       }
-
+      if (response.status === 429) {
+        return {
+          code: 'RATE_LIMITED',
+          message: 'Gemini API quota exceeded. Try again in a minute, or use an AI Studio key for higher limits.',
+        };
+      }
       return {
         code: 'GEMINI_API_ERROR',
         message: `Gemini API error: ${response.statusText}`,
