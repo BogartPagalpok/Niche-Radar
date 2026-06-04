@@ -17,7 +17,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
         
         {/* LEFT — Hero */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12">
-          <div className="w-full" style={{ maxWidth: '460px' }}>
+          <div className="w-full" style={{ maxWidth: '480px' }}>
             {/* Logo */}
             <div
               className="flex items-center justify-center w-12 h-12 mb-6 lg:mb-8"
@@ -30,19 +30,26 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
               <Youtube size={24} strokeWidth={2} color="#FFFFFF" />
             </div>
 
-            <h1 style={{ fontSize: 'clamp(2rem, 6vw, 2.75rem)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '16px', lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: 'clamp(2.5rem, 7vw, 3.5rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '20px', lineHeight: 1.05 }}>
               Discover Trending Niches.
               <br />
-              <span style={{ color: 'var(--yt-red)' }}>Reverse-Engineer Success.</span>
+              <span style={{ 
+                background: 'linear-gradient(135deg, #FF4D4D 0%, #FF0000 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block'
+              }}>
+                Reverse-Engineer Success.
+              </span>
             </h1>
 
-            <p style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.05rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '32px' }}>
+            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '36px', maxWidth: '440px' }}>
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
             <button
               onClick={onEnterApp}
-              className="clay-btn-red flex items-center justify-center lg:justify-start gap-2 px-8 py-4 w-full sm:w-auto"
+              className="clay-btn-red flex items-center justify-center lg:justify-start gap-2 px-8 py-4 w-full sm:w-auto transition-transform hover:scale-[1.02]"
               style={{ fontSize: '1rem', fontWeight: 700 }}
             >
               Launch App
@@ -76,7 +83,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                 const Icon = feature.icon;
                 return (
                   <div key={feature.title} className="stat-card flex items-start gap-3.5 p-4 sm:p-4.5" style={{ cursor: 'default' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifycontent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
                       <Icon size={18} strokeWidth={2} color="var(--yt-red)" />
                     </div>
                     <div>
