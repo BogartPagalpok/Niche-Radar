@@ -68,9 +68,9 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
   return (
     <>
       {/* MOBILE BOTTOM NAV */}
-      <div className="flex lg:hidden w-full items-center justify-center p-0 fixed bottom-4 left-0 right-0 z-50 bg-transparent pointer-events-none">
+      <div className="flex lg:hidden w-full items-center justify-center p-0 fixed bottom-4 left-0 right-0 z-50 bg-transparent">
         <div 
-          className="flex flex-row items-center justify-between w-[calc(100%-32px)] sm:w-[calc(100%-40px)] max-w-[420px] pointer-events-auto"
+          className="flex flex-row items-center justify-between w-[calc(100%-32px)] sm:w-[calc(100%-40px)] max-w-[420px]"
           style={{ 
             background: isDark ? 'rgba(23, 23, 23, 0.85)' : 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(16px)',
@@ -166,7 +166,7 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
 
       {/* DESKTOP SIDEBAR */}
       <aside
-        className="hidden lg:flex flex-col h-full w-full flex-shrink-0 z-10"
+        className="hidden lg:flex flex-col h-full w-full flex-shrink-0"
         style={{
           background: 'var(--bg-panel)',
           borderRight: '1px solid var(--border-subtle)',
