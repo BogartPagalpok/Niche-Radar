@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { VideoProvider, useVideoContext } from './context/VideoContext';
+import { LoadingProvider } from './context/LoadingContext';
+import { checkProxyHealth } from './services/proxyHealthCheck';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Sidebar, { type ActiveView } from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import NicheSearch from './components/NicheSearch';
@@ -29,13 +32,12 @@ function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center gap-4 animate-fade-in py-12">
+    <div className="h-full w-full flex flex-col items-center justify-center gap-6 py-12">
       <div
-        className="transition-transform duration-300 hover:scale-105"
         style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '22px',
+          width: '64px',
+          height: '64px',
+          borderRadius: '16px',
           background: 'var(--bg-surface)',
           boxShadow: 'var(--shadow-clay-lg)',
           display: 'flex',
@@ -45,36 +47,24 @@ function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
       >
         <div
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, rgba(255,0,0,0.15), rgba(255,0,0,0.05))',
-            border: '1.5px solid rgba(255,0,0,0.2)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05))',
+            border: '1.5px solid rgba(34,197,94,0.3)',
             boxShadow: 'var(--shadow-clay-sm)',
           }}
         />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '6px' }}>
-          {labels[view]}
+        <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '8px' }}>
+          Ready
         </p>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', maxWidth: '260px', lineHeight: 1.6 }}>
-          Select an item from the left panel to load detailed analysis here.
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: '300px', lineHeight: 1.6 }}>
+          {view === 'dashboard'
+            ? 'Start by searching for a niche or browsing trends'
+            : 'Select an item from the left panel to load detailed analysis'}
         </p>
-      </div>
-      <div className="flex gap-2">
-        {[40, 24, 32].map((w, i) => (
-          <div
-            key={i}
-            style={{
-              height: '6px',
-              width: `${w}px`,
-              borderRadius: '999px',
-              background: 'var(--bg-elevated)',
-              boxShadow: 'var(--shadow-inset)',
-            }}
-          />
-        ))}
       </div>
     </div>
   );
@@ -82,7 +72,22 @@ function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
 
 function AppShell(): React.ReactElement {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
+  const [proxyReady, setProxyReady] = useState(false);
+  const [proxyError, setProxyError] = useState<string | null>(null);
   const { isDark } = useTheme();
+
+  useEffect(() => {
+    (async () => {
+      const health = await checkProxyHealth();
+      if (health.healthy) {
+        setProxyReady(true);
+        console.log('YouTube proxy is ready');
+      } else {
+        setProxyError(health.error || 'Proxy connection failed');
+        console.warn('YouTube proxy failed:', health.error);
+      }
+    })();
+  }, []);
 
   const renderLeftContent = (): React.ReactElement => {
     switch (activeView) {
@@ -234,10 +239,14 @@ function AppShell(): React.ReactElement {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <VideoProvider>
-        <AppShell />
-      </VideoProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <VideoProvider>
+          <LoadingProvider>
+            <AppShell />
+          </LoadingProvider>
+        </VideoProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
