@@ -69,96 +69,95 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
     <aside
       className="w-full h-full lg:w-full lg:h-full lg:flex-col flex flex-row flex-shrink-0 z-10"
       style={{
-        background: 'var(--bg-panel)',
-        borderColor: 'var(--border-subtle)',
+        background: 'var(--bg-root)',
         boxSizing: 'border-box',
-        boxShadow: isDark
-          ? 'inset -4px 0 20px rgba(0,0,0,0.2)'
-          : 'inset -4px 0 16px rgba(0,0,0,0.02)',
       }}
     >
       {/* MOBILE BOTTOM NAV */}
-      <div 
-        className="flex lg:hidden w-full flex-row items-center justify-between overflow-x-auto overflow-y-hidden box-border custom-scroll"
-        style={{ 
-          padding: '8px 12px',
-          gap: '8px',
-          borderTop: '1px solid var(--border-subtle)',
-          scrollbarWidth: 'none'
-        }}
-      >
-        {MOBILE_ITEMS.map(id => {
-          const item = ITEM_MAP[id];
-          if (!item) return null;
-          const Icon = item.icon;
-          const isActive = activeView === item.id;
+      <div className="flex lg:hidden w-full items-center justify-center p-4 fixed bottom-0 left-0 right-0 z-50 bg-transparent pointer-events-none">
+        <div 
+          className="flex flex-row items-center justify-between w-full max-w-[420px] pointer-events-auto"
+          style={{ 
+            background: 'rgba(23, 23, 23, 0.85)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '24px',
+            padding: '6px',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+          }}
+        >
+          {MOBILE_ITEMS.map(id => {
+            const item = ITEM_MAP[id];
+            if (!item) return null;
+            const Icon = item.icon;
+            const isActive = activeView === item.id;
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className="flex flex-row items-center justify-center gap-2 flex-shrink-0 transition-all duration-200"
-              style={{
-                flex: isActive ? '1.5 1 0%' : '1 1 0%',
-                minWidth: isActive ? '110px' : '44px',
-                maxWidth: isActive ? '140px' : '52px',
-                padding: '10px 8px',
-                background: isActive 
-                  ? 'linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,0,0,0.08))' 
-                  : 'transparent',
-                border: isActive ? '1px solid rgba(255,51,51,0.25)' : '1px solid transparent',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                boxSizing: 'border-box',
-                overflow: 'hidden',
-              }}
-              title={item.label}
-            >
-              <Icon
-                size={18}
-                strokeWidth={isActive ? 2.5 : 2}
-                color={isActive ? 'var(--yt-red)' : 'var(--text-secondary)'}
-                style={{ transition: 'all 200ms ease', flexShrink: 0 }}
-              />
-              <span
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                className="flex flex-row items-center justify-center gap-2 flex-shrink-0 transition-all duration-300 ease-out"
                 style={{
-                  fontSize: '0.75rem',
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? 'var(--yt-red)' : 'var(--text-secondary)',
-                  lineHeight: 1,
-                  display: isActive ? 'block' : 'none',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
+                  flex: isActive ? '1 0 auto' : '0 0 auto',
+                  width: isActive ? 'auto' : '44px',
+                  height: '44px',
+                  padding: isActive ? '0 16px' : '0',
+                  background: isActive 
+                    ? 'linear-gradient(135deg, rgba(255,51,51,0.18) 0%, rgba(204,0,0,0.1) 100%)' 
+                    : 'transparent',
+                  border: isActive ? '1px solid rgba(255,51,51,0.3)' : '1px solid transparent',
+                  borderRadius: '18px',
+                  cursor: 'pointer',
+                  boxSizing: 'border-box',
                   overflow: 'hidden',
                 }}
+                title={item.label}
               >
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
+                <Icon
+                  size={20}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  color={isActive ? 'var(--yt-red)' : 'rgba(255, 255, 255, 0.4)'}
+                  style={{ transition: 'colors 200ms ease', flexShrink: 0 }}
+                />
+                {isActive && (
+                  <span
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: 'var(--yt-red)',
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
 
-        <button
-          onClick={toggleTheme}
-          className="flex items-center justify-center flex-shrink-0"
-          style={{
-            width: '40px',
-            height: '40px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            boxSizing: 'border-box',
-            marginLeft: 'auto',
-          }}
-          title="Toggle theme"
-        >
-          {isDark ? (
-            <Sun size={18} strokeWidth={2} color="var(--text-secondary)" />
-          ) : (
-            <Moon size={18} strokeWidth={2} color="var(--text-secondary)" />
-          )}
-        </button>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center flex-shrink-0"
+            style={{
+              width: '44px',
+              height: '44px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '18px',
+              cursor: 'pointer',
+              boxSizing: 'border-box',
+            }}
+            title="Toggle theme"
+          >
+            {isDark ? (
+              <Sun size={18} strokeWidth={2} color="rgba(255, 255, 255, 0.6)" />
+            ) : (
+              <Moon size={18} strokeWidth={2} color="rgba(255, 255, 255, 0.6)" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* DESKTOP SIDEBAR */}
@@ -406,18 +405,6 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             <p style={{ margin: '0px', marginTop: '1px', fontSize: '0.58rem', color: 'var(--text-tertiary)', fontWeight: 400, opacity: 0.7 }}>
               Developed by: Ian Lester Eclevia
             </p>
-          </div>
-
-          {/* Legal Links Placeholder */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '8px',
-              flexWrap: 'wrap',
-              paddingTop: '2px',
-            }}
-          >
           </div>
 
           {/* Version */}
