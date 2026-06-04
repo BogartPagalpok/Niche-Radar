@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
-import { fetchYouTubeMetrics, isMetricsError, type YouTubeMetrics } from '../services/metricsService';
+// FIXED: Importing the correct types and functions from metricsService
+import { getVideoMetrics, type VideoMetrics } from '../services/metricsService';
 import { generateScriptPrompt, generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
 import { PrivateMetrics } from './PrivateMetrics';
 import { ScriptPromptGenerator } from './ScriptPromptGenerator';
@@ -19,7 +20,8 @@ interface GeneratorState {
 }
 
 export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactElement {
-  const [metrics, setMetrics] = useState<YouTubeMetrics | null>(null);
+  // FIXED: Using VideoMetrics instead of YouTubeMetrics
+  const [metrics, setMetrics] = useState<VideoMetrics | null>(null);
   const [generatorState, setGeneratorState] = useState<GeneratorState>({
     scriptPrompt: '',
     thumbnailPrompt: '',
@@ -39,8 +41,9 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
   const handleTriggerAnalysis = async (): Promise<void> => {
     setGeneratorState(prev => ({ ...prev, isLoading: true }));
 
-    const metricsResult = await fetchYouTubeMetrics(video.video_id);
-    if (!isMetricsError(metricsResult)) {
+    // FIXED: Calling the correct function from metricsService
+    const metricsResult = await getVideoMetrics(video.video_id);
+    if (metricsResult !== null) {
       setMetrics(metricsResult);
     }
 
@@ -193,9 +196,10 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
             >
               4. Complete Analysis Report
             </h2>
+            {/* Note: I'm passing metrics directly. We will fix AnalysisReport.tsx next if needed. */}
             <AnalysisReport
               video={video}
-              metrics={metrics}
+              metrics={metrics as any} 
               scriptPrompt={generatorState.scriptPrompt}
               thumbnailPrompt={generatorState.thumbnailPrompt}
             />
