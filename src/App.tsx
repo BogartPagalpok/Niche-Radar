@@ -118,6 +118,11 @@ function AppShell(): React.ReactElement {
     setShowLanding(false);
   };
 
+  // NEW: Handles the handoff from the Google Login button
+  const handleGoogleLoginSuccess = (token: string) => {
+    localStorage.setItem('niche-radar-google-token', token);
+  };
+
   const renderLeftContent = (): React.ReactElement => {
     switch (activeView) {
       case 'dashboard':
@@ -141,17 +146,22 @@ function AppShell(): React.ReactElement {
 
   // Show landing page on first visit
   if (showLanding) {
-    return <LandingPage onEnterApp={handleEnterApp} />;
+    return (
+      <LandingPage 
+        onEnterApp={handleEnterApp} 
+        onGoogleLoginSuccess={handleGoogleLoginSuccess} 
+      />
+    );
   }
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
-      {/* 1. MOBILE ONLY NAVIGATION OVERLAY CONTAINER — Completely hidden on desktop layout streams */}
+      {/* 1. MOBILE ONLY NAVIGATION OVERLAY CONTAINER */}
       <div className="lg:hidden fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-5">
         <Sidebar activeView={activeView} onNavigate={setActiveView} />
       </div>
 
-      {/* 2. DESKTOP ONLY SIDEBAR COLUMN PANELS — Renders only on wide screens to bypass overlap blocks */}
+      {/* 2. DESKTOP ONLY SIDEBAR COLUMN PANELS */}
       <div className="hidden lg:flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border flex-shrink-0">
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden lg:shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
