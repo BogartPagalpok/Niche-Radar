@@ -1,355 +1,523 @@
-import { useState, useCallback, useRef } from 'react';
-import { Search, Loader2, AlertCircle } from 'lucide-react';
-import { type ExtractedVideo, searchYouTubeVideos } from '../services/youtubeScraper';
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { VideoCard } from './VideoCard';
-import { useVideoContext } from '../context/VideoContext';
-import { useTheme } from '../context/ThemeContext';
-
-interface SearchState {
-  query: string;
-  videos: ExtractedVideo[];
-  isLoading: boolean;
-  isLoadingMore: boolean;
-  error: string | null;
-  continuation: string | null;
-  hasSearched: boolean;
+export interface ExtractedVideo {
+  video_id: string;
+  title: string;
+  view_count: string;
+  description: string;
+  duration: string;
+  upload_date: string;
+  thumbnail_url: string;
+  channel_name: string;
+  channel_id: string;
 }
 
-export default function NicheSearch(): React.ReactElement {
-  const { selectedVideo, setSearchedVideos } = useVideoContext();
-  const { isDark } = useTheme();
-  const [state, setState] = useState<SearchState>({
-    query: '',
-    videos: [],
-    isLoading: false,
-    isLoadingMore: false,
-    error: null,
-    continuation: null,
-    hasSearched: false,
+export interface SearchResult {
+  videos: ExtractedVideo[];
+  continuation: string | null;
+}
+
+interface YouTubeVideoRenderer {
+  videoId: string;
+  title?: {
+    runs?: Array<{
+      text: string;
+    }>;
+  };
+  viewCountText?: {
+    simpleText?: string;
+    runs?: Array<{
+      text: string;
+    }>;
+  };
+  publishedTimeText?: {
+    simpleText?: string;
+  };
+  descriptionSnippet?: {
+    runs?: Array<{
+      text: string;
+    }>;
+  };
+  lengthText?: {
+    simpleText?: string;
+  };
+  thumbnail?: {
+    thumbnails?: Array<{
+      url: string;
+      width: number;
+      height: number;
+    }>;
+  };
+  longBylineText?: {
+    simpleText?: string;
+    runs?: Array<{
+      text: string;
+    }>;
+  };
+  channelId?: string;
+}
+
+// --- ADDED FOR SHORTS: extend interface to include reelItemRenderer ---
+interface YouTubeInitialData {
+  contents?: {
+    twoColumnSearchResultsRenderer?: {
+      primaryContents?: {
+        sectionListRenderer?: {
+          contents?: Array<{
+            itemSectionRenderer?: {
+              contents?: Array<{
+                videoRenderer?: YouTubeVideoRenderer;
+                reelItemRenderer?: any; // Shorts
+              }>;
+            };
+          }>;
+          continuations?: Array<{
+            nextContinuationData?: {
+              continuation?: string;
+            };
+          }>;
+        };
+      };
+    };
+  };
+  onResponseReceivedCommands?: Array<{
+    appendContinuationItemsAction?: {
+      continuationItems?: Array<{
+        videoRenderer?: YouTubeVideoRenderer;
+        reelItemRenderer?: any;
+        continuationItemRenderer?: {
+          continuationEndpoint?: {
+            continuationCommand?: {
+              token?: string;
+            };
+          };
+        };
+      }>;
+    };
+  }>;
+}
+// --- END ADDED ---
+
+function extractViewCount(viewCountText: string | undefined): string {
+  if (!viewCountText) return '0';
+
+  const match = viewCountText.match(/[\d.,]+/);
+  if (match) {
+    return match[0];
+  }
+
+  return '0';
+}
+
+function parseDuration(durationText: string | undefined): string {
+  if (!durationText) return '0:00';
+
+  const timePattern = /(\d+):(\d+):(\d+)|(\d+):(\d+)/;
+  const match = durationText.match(timePattern);
+
+  if (match) {
+    if (match[1]) {
+      return `${match[1]}:${match[2]}:${match[3]}`;
+    } else {
+      return `${match[4]}:${match[5]}`;
+    }
+  }
+
+  return durationText;
+}
+
+function parsePublishDate(publishedTimeText: string | undefined): string {
+  if (!publishedTimeText) return 'Unknown';
+
+  const lowerText = publishedTimeText.toLowerCase();
+
+  if (lowerText.includes('just now') || lowerText.includes('now')) return 'just now';
+  if (lowerText.includes('second')) return lowerText.split(' ')[0] + 's ago';
+  if (lowerText.includes('minute')) return lowerText.split(' ')[0] + 'm ago';
+  if (lowerText.includes('hour')) return lowerText.split(' ')[0] + 'h ago';
+  if (lowerText.includes('day')) return lowerText.split(' ')[0] + 'd ago';
+  if (lowerText.includes('week')) return lowerText.split(' ')[0] + 'w ago';
+  if (lowerText.includes('month')) return lowerText.split(' ')[0] + 'mo ago';
+  if (lowerText.includes('year')) return lowerText.split(' ')[0] + 'y ago';
+
+  return publishedTimeText;
+}
+
+function getThumbnailUrl(thumbnails: Array<{ url: string; width: number; height: number }> | undefined): string {
+  if (!thumbnails || thumbnails.length === 0) return '';
+
+  const highestQuality = thumbnails.reduce((prev, current) => {
+    const prevPixels = prev.width * prev.height;
+    const currentPixels = current.width * current.height;
+    return currentPixels > prevPixels ? current : prev;
   });
 
-  const loadMoreCountRef = useRef<number>(0);
+  return highestQuality.url;
+}
 
-  const performSearch = useCallback(
-    async (query: string, continuation: string | null = null): Promise<void> => {
-      const isInitialSearch = !continuation;
+function getTextFromRuns(runs: Array<{ text: string }> | undefined): string {
+  if (!runs || !Array.isArray(runs)) return '';
+  return runs.map((run: { text: string }) => run.text).join('');
+}
 
-      setState(prev => ({
-        ...prev,
-        ...(isInitialSearch && { isLoading: true, error: null }),
-        ...(!isInitialSearch && { isLoadingMore: true }),
-      }));
+function extractVideoFromRenderer(renderer: YouTubeVideoRenderer): ExtractedVideo | null {
+  try {
+    const videoId = renderer.videoId;
+    if (!videoId) return null;
+
+    const title = getTextFromRuns(renderer.title?.runs) || 'Untitled';
+
+    let viewCountText = '';
+    if (renderer.viewCountText?.simpleText) {
+      viewCountText = renderer.viewCountText.simpleText;
+    } else if (renderer.viewCountText?.runs) {
+      viewCountText = getTextFromRuns(renderer.viewCountText.runs);
+    }
+    const viewCount = extractViewCount(viewCountText);
+
+    const description = getTextFromRuns(renderer.descriptionSnippet?.runs) || '';
+
+    const durationText = renderer.lengthText?.simpleText;
+    const duration = parseDuration(durationText);
+
+    const publishedTimeText = renderer.publishedTimeText?.simpleText || '';
+    const uploadDate = parsePublishDate(publishedTimeText);
+
+    const thumbnailUrl = getThumbnailUrl(renderer.thumbnail?.thumbnails);
+
+    let channelName = '';
+    if (renderer.longBylineText?.simpleText) {
+      channelName = renderer.longBylineText.simpleText;
+    } else if (renderer.longBylineText?.runs) {
+      channelName = getTextFromRuns(renderer.longBylineText.runs);
+    }
+
+    const channelId = renderer.channelId || '';
+
+    return {
+      video_id: videoId,
+      title: title,
+      view_count: viewCount,
+      description: description,
+      duration: duration,
+      upload_date: uploadDate,
+      thumbnail_url: thumbnailUrl,
+      channel_name: channelName,
+      channel_id: channelId,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// --- ADDED FOR SHORTS: extract Shorts from reelItemRenderer ---
+function extractShortFromRenderer(item: any): ExtractedVideo | null {
+  try {
+    const renderer = item.reelItemRenderer;
+    if (!renderer) return null;
+
+    const videoId = renderer.videoId || renderer.reelId;
+    if (!videoId) return null;
+
+    const title = renderer.title?.runs?.[0]?.text || 'Untitled Short';
+
+    let viewCountText = '';
+    if (renderer.viewCountText?.simpleText) {
+      viewCountText = renderer.viewCountText.simpleText;
+    } else if (renderer.viewCountText?.runs) {
+      viewCountText = renderer.viewCountText.runs.map((r: any) => r.text).join('');
+    }
+    const viewCount = extractViewCount(viewCountText);
+
+    const publishedTimeText = renderer.publishedTimeText?.simpleText || '';
+    const uploadDate = parsePublishDate(publishedTimeText);
+
+    const thumbnailUrl = renderer.thumbnail?.thumbnails?.[0]?.url || '';
+
+    let channelName = '';
+    if (renderer.shortBylineText?.simpleText) {
+      channelName = renderer.shortBylineText.simpleText;
+    } else if (renderer.shortBylineText?.runs) {
+      channelName = renderer.shortBylineText.runs.map((r: any) => r.text).join('');
+    }
+
+    const channelId = renderer.channelId || '';
+
+    return {
+      video_id: videoId,
+      title: title,
+      view_count: viewCount,
+      description: '',
+      duration: '0:15', // Shorts are under 60 seconds
+      upload_date: uploadDate,
+      thumbnail_url: thumbnailUrl,
+      channel_name: channelName,
+      channel_id: channelId,
+    };
+  } catch {
+    return null;
+  }
+}
+// --- END ADDED ---
+
+function extractVideosFromInitialData(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
+  const videos: ExtractedVideo[] = [];
+  let continuation: string | null = null;
+
+  try {
+    const primaryContents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer;
+
+    if (primaryContents?.contents) {
+      for (const section of primaryContents.contents) {
+        if (section.itemSectionRenderer?.contents) {
+          for (const item of section.itemSectionRenderer.contents) {
+            if (item.videoRenderer) {
+              const extracted = extractVideoFromRenderer(item.videoRenderer);
+              if (extracted) {
+                videos.push(extracted);
+              }
+            }
+            // --- ADDED FOR SHORTS ---
+            if (item.reelItemRenderer) {
+              const extracted = extractShortFromRenderer(item);
+              if (extracted) {
+                videos.push(extracted);
+              }
+            }
+            // --- END ADDED ---
+          }
+        }
+      }
+    }
+
+    if (primaryContents?.continuations) {
+      continuation = primaryContents.continuations[0]?.nextContinuationData?.continuation || null;
+    }
+  } catch {
+    // Continue with any videos already extracted
+  }
+
+  return { videos, continuation };
+}
+
+function extractVideosFromContinuation(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
+  const videos: ExtractedVideo[] = [];
+  let continuation: string | null = null;
+
+  try {
+    if (data.onResponseReceivedCommands) {
+      for (const command of data.onResponseReceivedCommands) {
+        if (command.appendContinuationItemsAction?.continuationItems) {
+          for (const item of command.appendContinuationItemsAction.continuationItems) {
+            if (item.videoRenderer) {
+              const extracted = extractVideoFromRenderer(item.videoRenderer);
+              if (extracted) {
+                videos.push(extracted);
+              }
+            }
+            // --- ADDED FOR SHORTS ---
+            if (item.reelItemRenderer) {
+              const extracted = extractShortFromRenderer(item);
+              if (extracted) {
+                videos.push(extracted);
+              }
+            }
+            // --- END ADDED ---
+            if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
+              continuation = item.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // Continue with any videos already extracted
+  }
+
+  return { videos, continuation };
+}
+
+async function fetchWithProxy(url: string): Promise<string> {
+  const proxyFactories = [
+    (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+    (target: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+  ];
+
+  for (const createProxyUrl of proxyFactories) {
+    try {
+      const response = await fetch(createProxyUrl(url), {
+        method: 'GET',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.ok) {
+        return await response.text();
+      }
+      console.warn(`Proxy returned ${response.status}, trying next...`);
+    } catch (error) {
+      console.warn('Proxy failed, trying next...', error);
+    }
+  }
+  throw new Error('All CORS proxies failed. Please check your network connection.');
+}
+
+export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
+  try {
+    let htmlContent: string;
+
+    if (!continuation) {
+      // --- MODIFIED: removed &sp=EgIQAQ%3D%3D to include both videos and shorts ---
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+
+      htmlContent = await fetchWithProxy(searchUrl);
+
+      const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
+      if (!match || !match[1]) {
+        return {
+          videos: [],
+          continuation: null,
+        };
+      }
 
       try {
-        const result = await searchYouTubeVideos(query, continuation);
-        const parsedVideos = result.videos;
+        const jsonStr = match[1];
+        const data: YouTubeInitialData = JSON.parse(jsonStr);
+        const result = extractVideosFromInitialData(data);
 
-        if (parsedVideos.length === 0 && isInitialSearch) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            hasSearched: true,
-            error: 'No videos found. Try a different search term.',
-            videos: [],
-          }));
-          setSearchedVideos([]);
-          return;
-        }
-
-        setState(prev => {
-          const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
-          
-          setTimeout(() => setSearchedVideos(totalVideos), 0);
-
-          return {
-            ...prev,
-            videos: totalVideos,
-            continuation: result.continuation,
-            isLoading: false,
-            isLoadingMore: false,
-            hasSearched: true,
-            query: query,
-          };
-        });
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Search failed. Please try again.';
-
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          isLoadingMore: false,
-          error: errorMessage,
-          hasSearched: true,
-        }));
+        return {
+          videos: result.videos,
+          continuation: result.continuation,
+        };
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        return {
+          videos: [],
+          continuation: null,
+        };
       }
+    } else {
+      const continuationUrl = `https://www.youtube.com/youtubei/v1/search?key=AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E`;
+
+      const requestBody = {
+        context: {
+          client: {
+            clientName: 'WEB',
+            clientVersion: '2.20240101.01.00',
+          },
+        },
+        continuation: continuation,
+      };
+
+      const postProxyFactories = [
+        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+      ];
+
+      let data: any = null;
+      let success = false;
+
+      for (const createProxyUrl of postProxyFactories) {
+        try {
+          const response = await fetch(createProxyUrl(continuationUrl), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(10000),
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            success = true;
+            break;
+          }
+          console.warn(`Continuation proxy failed with status ${response.status}, trying next...`);
+        } catch (err) {
+          console.warn('Continuation proxy error, trying next...', err);
+        }
+      }
+
+      if (!success || !data) {
+        return {
+          videos: [],
+          continuation: null,
+        };
+      }
+
+      const result = extractVideosFromContinuation(data);
+
+      return {
+        videos: result.videos,
+        continuation: result.continuation,
+      };
+    }
+  } catch (error) {
+    console.error('YouTube search error:', error);
+    return {
+      videos: [],
+      continuation: null,
+    };
+  }
+}
+
+export function generateMockSearchResults(query: string): ExtractedVideo[] {
+  const mockVideos: ExtractedVideo[] = [
+    {
+      video_id: 'dQw4w9WgXcQ',
+      title: `${query} - High-Quality Guide Tutorial`,
+      view_count: '2.5M',
+      description: `Learn everything about ${query} in this comprehensive guide. Perfect for beginners and advanced users.`,
+      duration: '12:34',
+      upload_date: '2 days ago',
+      thumbnail_url: 'https://images.pexels.com/photos/3823157/pexels-photo-3823157.jpeg?auto=compress&cs=tinysrgb&w=600',
+      channel_name: 'Tech Mastery Channel',
+      channel_id: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
     },
-    [setSearchedVideos]
-  );
-
-  const handleSearch = useCallback((): void => {
-    const trimmedQuery = state.query.trim();
-    if (!trimmedQuery) return;
-
-    loadMoreCountRef.current = 0;
-    performSearch(trimmedQuery, null);
-  }, [state.query, performSearch]);
-
-  const handleLoadMore = useCallback((): void => {
-    if (state.isLoadingMore || !state.continuation || state.isLoading || loadMoreCountRef.current > 0) {
-      return;
-    }
-
-    loadMoreCountRef.current += 1;
-
-    performSearch(state.query, state.continuation);
-  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, performSearch]);
-
-  const sentinelRef = useInfiniteScroll(handleLoadMore, {
-    threshold: 0.1,
-    rootMargin: '200px',
-  });
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setState(prev => ({ ...prev, query: e.target.value }));
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
-      {/* Header */}
-      <div>
-        <h2
-          style={{
-            fontSize: '1.3rem',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em',
-            marginBottom: '4px',
-          }}
-        >
-          Video Search
-        </h2>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          Search YouTube and analyze video trends
-        </p>
-      </div>
-
-      {/* Search Bar */}
-      <div
-        style={{
-          background: 'var(--bg-panel)',
-          borderRadius: '24px',
-          boxShadow: isDark
-            ? 'inset 0 1px 1px rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.5)'
-            : 'inset 0 1px 0 rgba(255,255,255,1), 0 8px 16px rgba(0,0,0,0.04)',
-          border: 'none',
-          padding: '8px 12px 8px 8px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }} />
-
-        <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-            <Search
-              size={15}
-              strokeWidth={2.5}
-              style={{
-                position: 'absolute',
-                left: '14px',
-                color: 'var(--text-tertiary)',
-                flexShrink: 0,
-                zIndex: 2,
-              }}
-            />
-            <input
-              className="clay-input"
-              type="text"
-              value={state.query}
-              onChange={handleQueryChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Search videos, channels, topics…"
-              style={{
-                width: '100%',
-                paddingLeft: '40px',
-                paddingRight: '12px',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                fontSize: '0.875rem',
-                border: 'none',
-              }}
-            />
-          </div>
-          <button
-            onClick={handleSearch}
-            className="clay-btn-red flex items-center justify-center gap-2"
-            disabled={!state.query.trim() || state.isLoading}
-            style={{
-              opacity: !state.query.trim() ? 0.5 : 1,
-              cursor: !state.query.trim() ? 'not-allowed' : 'pointer',
-              flexShrink: 0,
-              height: '44px',
-              paddingLeft: '20px',
-              paddingRight: '20px',
-              borderRadius: '14px',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-            }}
-          >
-            {state.isLoading && (
-              <Loader2
-                size={14}
-                strokeWidth={2.5}
-                style={{ animation: 'spin 0.7s linear infinite' }}
-              />
-            )}
-            <span>{state.isLoading ? 'Searching…' : 'Search'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Error message */}
-      {state.error && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '10px',
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '10px 14px',
-            animation: 'fadeIn 0.3s ease-out',
-          }}
-        >
-          <AlertCircle
-            size={14}
-            strokeWidth={2.5}
-            color="#DC2626"
-            style={{ flexShrink: 0, marginTop: '1px' }}
-          />
-          <p style={{ fontSize: '0.75rem', color: '#991B1B', margin: 0, lineHeight: 1.5 }}>
-            {state.error}
-          </p>
-        </div>
-      )}
-
-      {/* Results List */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          paddingBottom: '8px',
-        }}
-      >
-        {!state.hasSearched && !state.isLoading && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 1,
-              gap: '12px',
-              paddingBottom: '40px',
-            }}
-          >
-            <div
-              style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '16px',
-                background: 'var(--bg-surface)',
-                boxShadow: 'var(--shadow-clay)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Search size={24} strokeWidth={1.5} color="var(--text-tertiary)" />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500, margin: 0 }}>
-                Start searching to discover videos
-              </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '4px', margin: 0 }}>
-                Enter keywords, topics, or channel names
-              </p>
-            </div>
-          </div>
-        )}
-
-        {state.hasSearched && state.videos.length === 0 && !state.isLoading && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 1,
-              gap: '12px',
-              paddingBottom: '40px',
-            }}
-          >
-            <AlertCircle size={32} strokeWidth={1.5} color="var(--text-tertiary)" />
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              No results found
-            </p>
-          </div>
-        )}
-
-        {state.videos.map(video => (
-          <VideoCard
-            key={video.video_id}
-            video={video}
-            isSelected={selectedVideo?.video_id === video.video_id}
-          />
-        ))}
-
-        {/* Infinite scroll sentinel */}
-        {state.hasSearched && state.videos.length > 0 && state.continuation && (
-          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {state.isLoadingMore && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Loader2
-                  size={14}
-                  strokeWidth={2.5}
-                  color="var(--yt-red)"
-                  style={{ animation: 'spin 0.7s linear infinite' }}
-                />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
-                  Loading more…
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* End of results indicator */}
-        {state.hasSearched && state.videos.length > 0 && !state.continuation && (
-          <div
-            style={{
-              textAlign: 'center',
-              paddingTop: '20px',
-              paddingBottom: '40px',
-            }}
-          >
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
-              No more results
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    {
+      video_id: 'jNQXAC9IVRw',
+      title: `${query} Explained - What You Need to Know`,
+      view_count: '1.8M',
+      description: `Breaking down the key concepts of ${query}. Easy to understand explanations.`,
+      duration: '8:45',
+      upload_date: '1 week ago',
+      thumbnail_url: 'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=600',
+      channel_name: 'Learning Hub Pro',
+      channel_id: 'UCeJfTbLKlYKvQqUr2jqg-bg',
+    },
+    {
+      video_id: '9bZkp7q19f0',
+      title: `${query} Advanced Techniques - Pro Tips`,
+      view_count: '890K',
+      description: `Master advanced techniques in ${query}. For experienced practitioners only.`,
+      duration: '15:20',
+      upload_date: '3 days ago',
+      thumbnail_url: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=600',
+      channel_name: 'Expert Academy',
+      channel_id: 'UCt-nK2uP5NWOJHSXVN9nAQA',
+    },
+    {
+      video_id: 'LaFIKL9bXzQ',
+      title: `${query} for Beginners - Step by Step`,
+      view_count: '3.2M',
+      description: `Complete beginner's guide to ${query}. Start from zero knowledge and build up.`,
+      duration: '20:15',
+      upload_date: '5 days ago',
+      thumbnail_url: 'https://images.pexels.com/photos/3834215/pexels-photo-3834215.jpeg?auto=compress&cs=tinysrgb&w=600',
+      channel_name: 'Skill Builder',
+      channel_id: 'UCWr1QX02OJk-SkJUbysKa7Q',
+    },
+    {
+      video_id: 'wixzV8I8zBs',
+      title: `Why ${query} is Important in 2024`,
+      view_count: '1.2M',
+      description: `Understanding why ${query} matters now more than ever. Trends and predictions.`,
+      duration: '9:30',
+      upload_date: '1 day ago',
+      thumbnail_url: 'https://images.pexels.com/photos/3945657/pexels-photo-3945657.jpeg?auto=compress&cs=tinysrgb&w=600',
+      channel_name: 'Trends & Insights',
+      channel_id: 'UCFKDEp9si4RmHvPf5kK17Qw',
+    },
+  ];
+  return mockVideos;
 }
