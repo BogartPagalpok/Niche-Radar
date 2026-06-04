@@ -37,17 +37,29 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
   };
 
   const handleFetchStats = async (): Promise<void> => {
-    if (!video?.channel_id || statsFetched) return;
+    if (!video?.channel_id || loadingStats) return;
     setLoadingStats(true);
     try {
-      const apiKey = localStorage.getItem('niche-radar-gemini-key');
-      if (!apiKey) {
-        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add API key in Settings' });
+      // FIX: Targeted your authenticated OAuth token key instead of gemini key string
+      const token = localStorage.getItem('niche-radar-google-token');
+      if (!token) {
+        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add Token in Settings' });
         setStatsFetched(true);
         setLoadingStats(false);
         return;
       }
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}&key=${apiKey}`);
+      
+      // FIX: Cleaned literal string boundary quotes out of stored tokens
+      const cleanToken = token.replace(/^"|"$/g, '');
+
+      // FIX: Integrated proper Bearer Authorization headers for Google Gateway validation
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}`, {
+        headers: { 
+          'Authorization': `Bearer ${cleanToken}`,
+          'Accept': 'application/json'
+        }
+      });
+      
       const data = await res.json();
       if (data.items?.length) {
         const s = data.items[0].statistics;
@@ -318,9 +330,11 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>
-                {channelStats?.error || 'Could not load stats'}
-              </p>
+              <div className="stat-card" style={{ border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <p style={{ fontSize: '0.75rem', color: '#EF4444', textAlign: 'center', margin: 0, fontWeight: 600 }}>
+                  {channelStats?.error || 'Could not load stats'}
+                </p>
+              </div>
             )}
           </div>
 
