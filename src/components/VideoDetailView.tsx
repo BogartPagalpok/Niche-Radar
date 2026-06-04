@@ -393,7 +393,7 @@ export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactEle
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', paddingBottom: '16px' }}>
             <a
               href={youtubeUrl}
               target="_blank"
