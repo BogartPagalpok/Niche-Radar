@@ -266,7 +266,7 @@ function AppShell(): React.ReactElement {
             }}
           >
             <div className="custom-scroll flex-1 overflow-y-auto p-4 sm:p-5 lg:p-8">
-              <RightPanelContent view={activeView} onClose={handleCloseMobileDetail} />
+              <RightPanelContent view={activeView} />
             </div>
           </div>
         </div>
