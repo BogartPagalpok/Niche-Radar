@@ -264,24 +264,29 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
   return { videos, continuation };
 }
 
-// ---------- UPDATED: uses your personal Cloudflare Worker ----------
 async function fetchWithProxy(url: string): Promise<string> {
   const proxyFactories = [
-    (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`
+    (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
+    (target: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
   ];
 
   for (const createProxyUrl of proxyFactories) {
     try {
-      const response = await fetch(createProxyUrl(url), { method: 'GET' });
+      const response = await fetch(createProxyUrl(url), {
+        method: 'GET',
+        signal: AbortSignal.timeout(10000),
+      });
       if (response.ok) {
         return await response.text();
       }
-      console.warn(`Proxy endpoint returned non-200 status: ${response.status}. Rotating pool node...`);
+      console.warn(`Proxy returned ${response.status}, trying next...`);
     } catch (error) {
-      console.warn('Proxy query failed network protocol constraints, checking next configuration entry...', error);
+      console.warn('Proxy failed, trying next...', error);
     }
   }
-  throw new Error('All configured public CORS proxies are currently rate-limited or blocking YouTube layout components.');
+  throw new Error('All CORS proxies failed. Please check your network connection.');
 }
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
@@ -330,9 +335,10 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
-      // ---------- UPDATED: uses your personal Cloudflare Worker ----------
       const postProxyFactories = [
-        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`
+        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
       ];
 
       let data: any = null;
@@ -346,6 +352,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(10000),
           });
 
           if (response.ok) {
@@ -353,9 +360,9 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
             success = true;
             break;
           }
-          console.warn(`Continuation proxy endpoint failed with status ${response.status}. Rotating pool...`);
+          console.warn(`Continuation proxy failed with status ${response.status}, trying next...`);
         } catch (err) {
-          console.warn('Continuation token connection error, rotating proxy node...', err);
+          console.warn('Continuation proxy error, trying next...', err);
         }
       }
 
