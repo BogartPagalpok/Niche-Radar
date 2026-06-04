@@ -1,26 +1,25 @@
 import { useState } from 'react';
-import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2, TrendingUp, Search } from 'lucide-react';
+import { ExternalLink, Youtube, User, Calendar, Eye, Clock, Copy, CheckCircle2, BarChart3, FileText, Loader2, TrendingUp } from 'lucide-react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { useTheme } from '../context/ThemeContext';
 import { useVideoContext } from '../context/VideoContext';
-import { type ActiveView } from './Sidebar';
+import { fetchChannelStats, type ChannelStats } from '../services/channelStats';
 
 interface VideoDetailViewProps {
   video: ExtractedVideo;
-  onNavigate?: (view: ActiveView) => void; // Optional hook if passing layout handlers downward
 }
 
 type TabType = 'details' | 'analytics';
 
-export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): React.ReactElement {
+export function VideoDetailView({ video }: VideoDetailViewProps): React.ReactElement {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
-  const [channelStats, setChannelStats] = useState<any>(null);
+  const [channelStats, setChannelStats] = useState<ChannelStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsFetched, setStatsFetched] = useState(false);
   const { isDark } = useTheme();
-  const { savedNiches, saveVideoToNiches, removeVideoFromNiches, clearSelection } = useVideoContext();
+  const { savedNiches, saveVideoToNiches, removeVideoFromNiches } = useVideoContext();
 
   const isBookmarked = savedNiches.some(v => v.video_id === video.video_id);
 
@@ -38,59 +37,15 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
     }
   };
 
-  const handleFetchStats = async (): Promise<void> => {
-    if (!video?.channel_id || loadingStats) return;
+  const handleFetchStats = (): void => {
+    if (!video?.channel_id || statsFetched) return;
     setLoadingStats(true);
-    try {
-      const token = localStorage.getItem('niche-radar-google-token');
-      if (!token) {
-        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Add Token in Settings' });
+    fetchChannelStats(video.channel_id)
+      .then(data => {
+        setChannelStats(data);
         setStatsFetched(true);
-        setLoadingStats(false);
-        return;
-      }
-      
-      const cleanToken = token.replace(/^"|"$/g, '');
-
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${video.channel_id}`, {
-        headers: { 
-          'Authorization': `Bearer ${cleanToken}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      const data = await res.json();
-      if (data.items?.length) {
-        const s = data.items[0].statistics;
-        const sn = data.items[0].snippet;
-        const f = (n: string) => { const x = parseInt(n); return x >= 1000000 ? (x/1000000).toFixed(1)+'M' : x >= 1000 ? (x/1000).toFixed(1)+'K' : n; };
-        setChannelStats({ subscribers: f(s.subscriberCount), totalViews: f(s.viewCount), videoCount: f(s.videoCount), country: sn.country || 'N/A' });
-      } else {
-        setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: data.error?.message || 'Not found' });
-      }
-    } catch {
-      setChannelStats({ subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A', country: 'N/A', error: 'Failed' });
-    }
-    setStatsFetched(true);
-    setLoadingStats(false);
-  };
-
-  const handleExportMarkdown = (): void => {
-    const content = `# Niche Radar Video Blueprint: ${video.title}\n\n` +
-      `- **Video ID:** ${video.video_id}\n` +
-      `- **Channel:** ${video.channel_name} (${video.channel_id})\n` +
-      `- **Views:** ${video.view_count}\n` +
-      `- **Published:** ${video.upload_date}\n\n` +
-      `## Description\n${video.description || 'No description provided.'}`;
-
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `blueprint-${video.video_id}.md`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      })
+      .finally(() => setLoadingStats(false));
   };
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.video_id}`;
@@ -195,41 +150,6 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
             ) : (
               <Youtube size={48} strokeWidth={1.5} color="var(--yt-red)" />
             )}
-          </div>
-
-          {/* Action Row containing: New Search, View Trends, Export Report */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-            <button
-              onClick={() => {
-                clearSelection();
-                if (onNavigate) onNavigate('niche-search');
-              }}
-              className="clay-btn-secondary"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
-            >
-              <Search size={14} color="#EF4444" strokeWidth={2.5} />
-              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>New Search</span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (onNavigate) onNavigate('trend-analysis');
-              }}
-              className="clay-btn-secondary"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
-            >
-              <TrendingUp size={14} color="#3B82F6" strokeWidth={2.5} />
-              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>View Trends</span>
-            </button>
-
-            <button
-              onClick={handleExportMarkdown}
-              className="clay-btn-secondary"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', gap: '6px', borderRadius: '16px', cursor: 'pointer' }}
-            >
-              <ExternalLink size={14} color="#10B981" strokeWidth={2.5} />
-              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>Export Report</span>
-            </button>
           </div>
 
           {/* Video title */}
@@ -343,7 +263,7 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
                 onClick={handleFetchStats}
                 disabled={loadingStats}
                 className="clay-btn-secondary flex items-center gap-2 px-4 py-3"
-                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center', cursor: 'pointer' }}
+                style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center' }}
               >
                 {loadingStats ? (
                   <>
@@ -352,7 +272,7 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
                   </>
                 ) : (
                   <>
-                    <BarChart3 size={14} />
+                    <TrendingUp size={14} />
                     View Channel Stats (1 API call)
                   </>
                 )}
@@ -382,11 +302,9 @@ export function VideoDetailView({ video, onNavigate }: VideoDetailViewProps): Re
                 </div>
               </div>
             ) : (
-              <div className="stat-card" style={{ border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <p style={{ fontSize: '0.75rem', color: '#EF4444', textAlign: 'center', margin: 0, fontWeight: 600 }}>
-                  {channelStats?.error || 'Could not load stats'}
-                </p>
-              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                {channelStats?.error || 'Could not load stats'}
+              </p>
             )}
           </div>
 
