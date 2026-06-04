@@ -1,4 +1,4 @@
-import { getCredentials } from './credentialsService';
+import { getCredentials, refreshGoogleToken } from './credentialsService';
 
 export interface VideoMetrics {
   videoId: string;
@@ -26,7 +26,7 @@ async function makeYouTubeAnalyticsRequest(
   endpoint: string,
   params: Record<string, string>
 ): Promise<any> {
-  const { googleToken } = getCredentials();
+  let { googleToken } = getCredentials();
 
   if (!googleToken) {
     throw {
@@ -35,18 +35,33 @@ async function makeYouTubeAnalyticsRequest(
     } as AnalyticsError;
   }
 
-  const url = new URL(endpoint);
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.set(key, value);
-  });
+  // Logic to execute the fetch, used for initial attempt and retry
+  const executeFetch = async (token: string) => {
+    const url = new URL(endpoint);
+    Object.entries(params).forEach(([key, value]) => {
+      url.searchParams.set(key, value);
+    });
 
-  try {
-    const response = await fetch(url.toString(), {
+    return await fetch(url.toString(), {
       headers: {
-        Authorization: `Bearer ${googleToken}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/json',
       },
     });
+  };
+
+  try {
+    let response = await executeFetch(googleToken);
+
+    // FIX: If unauthorized, attempt one refresh
+    if (response.status === 401) {
+      console.warn("Token expired, attempting refresh...");
+      const newCredentials = await refreshGoogleToken();
+      if (newCredentials?.googleToken) {
+        googleToken = newCredentials.googleToken;
+        response = await executeFetch(googleToken);
+      }
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
