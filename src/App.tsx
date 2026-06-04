@@ -150,7 +150,7 @@ function AppShell(): React.ReactElement {
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden hidden lg:block lg:shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
-        <div className="lg:hidden w-full pointer-events-auto">
+        <div className="lg:hidden w-full pointer-events-auto px-4 sm:px-5">
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
       </div>
