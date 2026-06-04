@@ -318,7 +318,7 @@ export default function NicheSearch(): React.ReactElement {
 
         {/* Infinite scroll sentinel */}
         {state.hasSearched && state.videos.length > 0 && state.continuation && (
-          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifycontent: 'center' }}>
             {state.isLoadingMore && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Loader2
@@ -346,7 +346,7 @@ export default function NicheSearch(): React.ReactElement {
           >
             <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
               No more results
-            </p>
+            </span>
           </div>
         )}
       </div>
