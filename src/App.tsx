@@ -17,7 +17,7 @@ import { VideoDetailView } from './components/VideoDetailView';
 function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
   const { selectedVideo } = useVideoContext();
 
-  if (view === 'niche-search' && selectedVideo) {
+  if (selectedVideo) {
     return <VideoDetailView video={selectedVideo} />;
   }
 
@@ -48,12 +48,10 @@ function RightPanelContent({ view }: { view: ActiveView }): React.ReactElement {
       </div>
       <div style={{ textAlign: 'center' }}>
         <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '8px' }}>
-          Ready
+          Select a Video
         </p>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: '300px', lineHeight: 1.6 }}>
-          {view === 'dashboard'
-            ? 'Start by searching for a niche or browsing trends'
-            : 'Select an item from the left panel to load detailed analysis'}
+          Click any video from the left panel to view full details, AI script analysis, and thumbnail prompts
         </p>
       </div>
     </div>
