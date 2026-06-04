@@ -10,10 +10,10 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
 
   return (
     <div
-      className="min-h-screen w-full overflow-hidden custom-scroll"
+      className="min-h-screen w-full overflow-y-auto custom-scroll"
       style={{ background: 'var(--bg-root)' }}
     >
-      <div className="h-full w-full flex flex-col lg:flex-row">
+      <div className="min-h-screen w-full flex flex-col lg:flex-row">
         
         {/* LEFT — Hero */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-0">
