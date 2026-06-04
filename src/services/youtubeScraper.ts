@@ -264,7 +264,7 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
   return { videos, continuation };
 }
 
-async function fetchWithProxy(url: string): Promise<string> {
+async function fetchWithProxy(url: string, method: string = 'GET', body?: any): Promise<string> {
   const proxyFactories = [
     (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
     (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
@@ -275,7 +275,9 @@ async function fetchWithProxy(url: string): Promise<string> {
   for (const createProxyUrl of proxyFactories) {
     try {
       const response = await fetch(createProxyUrl(url), {
-        method: 'GET',
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
         signal: AbortSignal.timeout(10000),
       });
       if (response.ok) {
@@ -291,12 +293,13 @@ async function fetchWithProxy(url: string): Promise<string> {
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
-    let htmlContent: string;
+    // Dynamic key retrieval to prevent hardcoding quota limits
+    const apiKey = localStorage.getItem('niche-radar-youtube-api-key') || 'AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E';
 
     if (!continuation) {
       const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%3D%3D`;
 
-      htmlContent = await fetchWithProxy(searchUrl);
+      const htmlContent = await fetchWithProxy(searchUrl);
 
       const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
       if (!match || !match[1]) {
@@ -323,7 +326,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         };
       }
     } else {
-      const continuationUrl = `https://www.youtube.com/youtubei/v1/search?key=AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E`;
+      const continuationUrl = `https://www.youtube.com/youtubei/v1/search?key=${apiKey}`;
 
       const requestBody = {
         context: {
@@ -335,44 +338,8 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
         continuation: continuation,
       };
 
-      const postProxyFactories = [
-        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
-        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
-      ];
-
-      let data: any = null;
-      let success = false;
-
-      for (const createProxyUrl of postProxyFactories) {
-        try {
-          const response = await fetch(createProxyUrl(continuationUrl), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(10000),
-          });
-
-          if (response.ok) {
-            data = await response.json();
-            success = true;
-            break;
-          }
-          console.warn(`Continuation proxy failed with status ${response.status}, trying next...`);
-        } catch (err) {
-          console.warn('Continuation proxy error, trying next...', err);
-        }
-      }
-
-      if (!success || !data) {
-        return {
-          videos: [],
-          continuation: null,
-        };
-      }
-
+      const dataStr = await fetchWithProxy(continuationUrl, 'POST', requestBody);
+      const data = JSON.parse(dataStr);
       const result = extractVideosFromContinuation(data);
 
       return {
@@ -420,7 +387,7 @@ export function generateMockSearchResults(query: string): ExtractedVideo[] {
       description: `Master advanced techniques in ${query}. For experienced practitioners only.`,
       duration: '15:20',
       upload_date: '3 days ago',
-      thumbnail_url: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=600',
+      thumbnail_url: 'https://images.pexels.com/photos/3861969/pexels-photo-3945657.jpeg?auto=compress&cs=tinysrgb&w=600',
       channel_name: 'Expert Academy',
       channel_id: 'UCt-nK2uP5NWOJHSXVN9nAQA',
     },
