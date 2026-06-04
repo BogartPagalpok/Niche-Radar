@@ -84,7 +84,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-24">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {[
             { icon: Search, title: 'Niche Discovery', desc: 'Search any topic and see top-performing videos instantly.' },
             { icon: TrendingUp, title: 'Trend Analysis', desc: 'Track view velocity and emerging topics in real-time.' },
@@ -126,6 +126,103 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
           })}
         </div>
 
+        {/* How It Works */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2
+            style={{
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              textAlign: 'center',
+              marginBottom: '16px',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            How It Works
+          </h2>
+          
+          <div
+            style={{
+              background: 'var(--bg-panel)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-clay-lg)',
+              border: '1px solid var(--border-subtle)',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '2px',
+                background: isDark
+                  ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)'
+                  : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+              }}
+            />
+
+            {[
+              {
+                step: '01',
+                title: 'Search a Niche',
+                desc: 'Enter any topic or keyword to find the most viewed videos in that space. Our proxy engine fetches real YouTube data instantly.',
+              },
+              {
+                step: '02',
+                title: 'Analyze Performance',
+                desc: 'View detailed metrics, channel stats, keyword clusters, and trend data extracted from actual search results.',
+              },
+              {
+                step: '03',
+                title: 'Generate Content',
+                desc: 'Get AI-written scripts and thumbnail prompts modeled after top performers, ready for your next video.',
+              },
+            ].map((item, i, arr) => (
+              <div
+                key={item.step}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '14px',
+                  padding: '18px 20px',
+                  borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #FF3333, #CC0000)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    flexShrink: 0,
+                    boxShadow: 'var(--shadow-red)',
+                  }}
+                >
+                  {item.step}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    {item.title}
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
         <div
           style={{
@@ -141,7 +238,6 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
             Developed by: Ian Lester Eclevia
           </p>
           
-          {/* Legal Links Placeholder */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
             {/* Add links later:
             <a href="/privacy" style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Privacy</a>
