@@ -18,24 +18,19 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
         {/* LEFT — Hero */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 xl:p-16">
           <div className="w-full" style={{ maxWidth: '640px' }}>
-            <h1 style={{ fontSize: 'clamp(3.5rem, 7.5vw, 5.5rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: 0.95 }}>
-              Discover
-              <br />
-              Trending Niches.
-              <br />
+            <h1 style={{ fontSize: 'clamp(2.5rem, 5.5vw, 4.2rem)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.04em', marginBottom: '24px', lineHeight: 1.1 }}>
+              Discover Trending Niches.{' '}
               <span style={{ 
                 background: 'linear-gradient(135deg, #FF4D4D 0%, #FF0000 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                display: 'inline-block'
+                display: 'inline'
               }}>
-                Reverse-Engineer
-                <br />
-                Success.
+                Reverse-Engineer Success.
               </span>
             </h1>
 
-            <p style={{ fontSize: 'clamp(1.1rem, 2vw, 1.25rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '520px' }}>
+            <p style={{ fontSize: 'clamp(1rem, 1.8vw, 1.15rem)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '40px', maxWidth: '520px' }}>
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
