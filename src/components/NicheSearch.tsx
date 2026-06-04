@@ -1,53 +1,10 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
 import { type ExtractedVideo, searchYouTubeVideos } from '../services/youtubeScraper';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { VideoCard } from './VideoCard';
 import { useVideoContext } from '../context/VideoContext';
 import { useTheme } from '../context/ThemeContext';
-
-// ----- ADDED FILTER CONSTANTS -----
-const MIN_VIEWS = 500000;
-const MAX_AGE_DAYS = 15;
-
-// Parse view count: handles numbers, strings with commas, "58M", "120K", etc.
-function parseViewCount(raw: any): number {
-  if (typeof raw === 'number') return raw;
-  if (typeof raw !== 'string') return 0;
-  let cleaned = raw.replace(/,/g, '');
-  const match = cleaned.match(/^([\d.]+)\s*([km])?$/i);
-  if (match) {
-    let num = parseFloat(match[1]);
-    const suffix = match[2]?.toLowerCase();
-    if (suffix === 'k') num *= 1000;
-    if (suffix === 'm') num *= 1000000;
-    return Math.floor(num);
-  }
-  return parseInt(cleaned, 10) || 0;
-}
-
-// Parse relative date strings like "5d ago", "2 weeks ago", "1mo ago", "1y ago"
-function parseDaysAgo(dateStr: string): number {
-  if (!dateStr) return 999;
-  const str = dateStr.toLowerCase();
-  // Extract number and unit (d, w, m, y)
-  const match = str.match(/(\d+)\s*([dwmy])/);
-  if (match) {
-    const val = parseInt(match[1]);
-    const unit = match[2];
-    if (unit === 'd') return val;
-    if (unit === 'w') return val * 7;
-    if (unit === 'm') return val * 30;
-    if (unit === 'y') return val * 365;
-  }
-  // Try absolute date (ISO, etc.)
-  const date = new Date(dateStr);
-  if (!isNaN(date.getTime())) {
-    return Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-  }
-  return 999;
-}
-// ----- END OF ADDITIONS -----
 
 interface SearchState {
   query: string;
@@ -73,18 +30,6 @@ export default function NicheSearch(): React.ReactElement {
   });
 
   const loadMoreCountRef = useRef<number>(0);
-
-  // ----- FIXED: filter videos using robust parsing -----
-  const filteredVideos = useMemo(() => {
-    if (!state.hasSearched) return [];
-    return state.videos.filter(video => {
-      const viewCount = parseViewCount(video.viewCount);
-      if (viewCount < MIN_VIEWS) return false;
-      const days = parseDaysAgo(video.uploadedDate);
-      return days <= MAX_AGE_DAYS;
-    });
-  }, [state.videos, state.hasSearched]);
-  // ----- END OF FIX -----
 
   const performSearch = useCallback(
     async (query: string, continuation: string | null = null): Promise<void> => {
@@ -344,8 +289,7 @@ export default function NicheSearch(): React.ReactElement {
           </div>
         )}
 
-        {/* Empty state uses filteredVideos */}
-        {state.hasSearched && filteredVideos.length === 0 && !state.isLoading && (
+        {state.hasSearched && state.videos.length === 0 && !state.isLoading && (
           <div
             style={{
               display: 'flex',
@@ -359,15 +303,12 @@ export default function NicheSearch(): React.ReactElement {
           >
             <AlertCircle size={32} strokeWidth={1.5} color="var(--text-tertiary)" />
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              {state.videos.length > 0
-                ? `No videos with ≥${MIN_VIEWS.toLocaleString()} views in the last ${MAX_AGE_DAYS} days.`
-                : 'No results found'}
+              No results found
             </p>
           </div>
         )}
 
-        {/* Render filteredVideos */}
-        {filteredVideos.map(video => (
+        {state.videos.map(video => (
           <VideoCard
             key={video.video_id}
             video={video}
@@ -377,7 +318,7 @@ export default function NicheSearch(): React.ReactElement {
 
         {/* Infinite scroll sentinel */}
         {state.hasSearched && state.videos.length > 0 && state.continuation && (
-          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifycontent: 'center' }}>
             {state.isLoadingMore && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Loader2
