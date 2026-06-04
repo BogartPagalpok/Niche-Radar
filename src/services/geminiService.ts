@@ -88,7 +88,8 @@ CRITICAL INSTRUCTIONS:
 - Do not cut off mid-sentence. Complete every thought fully.`;
 
   try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    // FIXED: Rolled back to gemini-1.5-flash to prevent 403 errors on standard keys
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     const requestBody = {
       contents: [
@@ -207,7 +208,8 @@ Include in every Midjourney prompt: --ar 16:9 --style raw --v 6.1
 Make prompts specific. Include: subject description, expression, lighting, colors, background, camera angle, mood. Do not include text in the image prompts — text overlays are added in post-production.`;
 
   try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    // FIXED: Rolled back to gemini-1.5-flash
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     const requestBody = {
       contents: [
