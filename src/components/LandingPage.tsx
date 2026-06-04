@@ -1,4 +1,4 @@
-import { Youtube, TrendingUp, Search, Zap, BarChart3, Layers, ArrowRight, Star, ChevronRight } from 'lucide-react';
+import { Youtube, TrendingUp, Search, Zap, Settings, BarChart3, Layers, ArrowRight, Star, ChevronRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface LandingPageProps {
@@ -11,7 +11,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
   return (
     <div
       className="min-h-screen w-full overflow-y-auto"
-      style={{ background: isDark ? '#070707' : '#EAEAEA' }}
+      style={{ background: 'var(--bg-root)' }}
     >
       <div className="max-w-4xl mx-auto px-6 pt-16 pb-12">
         
@@ -167,60 +167,98 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
             {[
               {
                 step: '01',
-                title: 'Search a Niche',
-                desc: 'Enter any topic or keyword to find the most viewed videos in that space. Our proxy engine fetches real YouTube data instantly.',
+                title: 'Add Your Gemini API Key',
+                desc: 'Go to App Settings and paste your free Google Gemini API key. Get one in 30 seconds at aistudio.google.com — no credit card required.',
+                icon: Settings,
               },
               {
                 step: '02',
-                title: 'Analyze Performance',
-                desc: 'View detailed metrics, channel stats, keyword clusters, and trend data extracted from actual search results.',
+                title: 'Search Any Niche',
+                desc: 'Enter a topic or keyword. Niche Radar fetches real YouTube search results and extracts channel data, view counts, and trends.',
+                icon: Search,
               },
               {
                 step: '03',
-                title: 'Generate Content',
-                desc: 'Get AI-written scripts and thumbnail prompts modeled after top performers, ready for your next video.',
+                title: 'Generate AI Scripts',
+                desc: 'Click any video to analyze it with Gemini AI. Get ready-to-record scripts, thumbnail prompts, and retention strategies.',
+                icon: Zap,
               },
-            ].map((item, i, arr) => (
-              <div
-                key={item.step}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '14px',
-                  padding: '18px 20px',
-                  borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                  position: 'relative',
-                }}
-              >
+            ].map((item, i, arr) => {
+              const Icon = item.icon;
+              return (
                 <div
+                  key={item.step}
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #FF3333, #CC0000)',
-                    color: '#FFFFFF',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8rem',
-                    fontWeight: 800,
-                    flexShrink: 0,
-                    boxShadow: 'var(--shadow-red)',
+                    alignItems: 'flex-start',
+                    gap: '14px',
+                    padding: '18px 20px',
+                    borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                    position: 'relative',
                   }}
                 >
-                  {item.step}
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #FF3333, #CC0000)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      flexShrink: 0,
+                      boxShadow: 'var(--shadow-red)',
+                    }}
+                  >
+                    {item.step}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
+                      <Icon size={15} strokeWidth={2} color="var(--yt-red)" />
+                      <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {item.title}
+                      </h3>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                    {item.title}
-                  </h3>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+        </div>
+
+        {/* BYOK Info Card */}
+        <div
+          style={{
+            background: 'var(--bg-panel)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-clay)',
+            border: '1px solid var(--border-subtle)',
+            padding: '20px',
+            marginBottom: '24px',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            🔑 Bring Your Own Keys
+          </p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+            Niche Radar is free and open-source. You only need a free Gemini API key from{' '}
+            <a 
+              href="https://aistudio.google.com/apikey" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: 'var(--yt-red)', fontWeight: 600, textDecoration: 'underline' }}
+            >
+              Google AI Studio
+            </a>
+            {' '}to power the AI features. No credit card. No subscription. Your keys stay in your browser.
+          </p>
         </div>
 
         {/* Footer */}
@@ -239,10 +277,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
           </p>
           
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
-            {/* Add links later:
-            <a href="/privacy" style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Privacy</a>
-            <a href="/terms" style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textDecoration: 'none' }}>Terms</a>
-            */}
+            {/* Add links later */}
           </div>
 
           <p style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.5, margin: 0 }}>
