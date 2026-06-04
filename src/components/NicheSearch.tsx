@@ -149,58 +149,66 @@ export default function NicheSearch(): React.ReactElement {
             ? 'inset 0 1px 1px rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.5)'
             : 'inset 0 1px 0 rgba(255,255,255,1), 0 8px 16px rgba(0,0,0,0.04)',
           border: 'none',
-          padding: '14px',
+          padding: '8px 12px 8px 8px',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }} />
 
-        <div style={{ position: 'relative', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <Search
-            size={15}
-            strokeWidth={2.5}
-            style={{
-              position: 'absolute',
-              left: '14px',
-              color: 'var(--text-tertiary)',
-              flexShrink: 0,
-            }}
-          />
-          <input
-            className="clay-input"
-            type="text"
-            value={state.query}
-            onChange={handleQueryChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Search videos, channels, topics…"
-            style={{
-              flex: 1,
-              paddingLeft: '40px',
-              paddingRight: '12px',
-              paddingTop: '12px',
-              paddingBottom: '12px',
-              fontSize: '0.875rem',
-            }}
-          />
+        <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+            <Search
+              size={15}
+              strokeWidth={2.5}
+              style={{
+                position: 'absolute',
+                left: '14px',
+                color: 'var(--text-tertiary)',
+                flexShrink: 0,
+                zIndex: 2,
+              }}
+            />
+            <input
+              className="clay-input"
+              type="text"
+              value={state.query}
+              onChange={handleQueryChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Search videos, channels, topics…"
+              style={{
+                width: '100%',
+                paddingLeft: '40px',
+                paddingRight: '12px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                fontSize: '0.875rem',
+                border: 'none',
+              }}
+            />
+          </div>
           <button
             onClick={handleSearch}
-            className="clay-btn-red flex items-center gap-2 px-5"
+            className="clay-btn-red flex items-center justify-center gap-2"
             disabled={!state.query.trim() || state.isLoading}
             style={{
               opacity: !state.query.trim() ? 0.5 : 1,
               cursor: !state.query.trim() ? 'not-allowed' : 'pointer',
               flexShrink: 0,
+              height: '44px',
+              paddingLeft: '20px',
+              paddingRight: '20px',
+              borderRadius: '14px',
+              fontWeight: 600,
+              fontSize: '0.85rem',
             }}
           >
-            {state.isLoading ? (
+            {state.isLoading && (
               <Loader2
                 size={14}
                 strokeWidth={2.5}
                 style={{ animation: 'spin 0.7s linear infinite' }}
               />
-            ) : (
-              <Search size={14} strokeWidth={2.5} />
             )}
             <span>{state.isLoading ? 'Searching…' : 'Search'}</span>
           </button>
@@ -338,7 +346,7 @@ export default function NicheSearch(): React.ReactElement {
           >
             <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
               No more results
-            </span>
+            </p>
           </div>
         )}
       </div>
