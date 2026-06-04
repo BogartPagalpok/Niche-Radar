@@ -146,8 +146,11 @@ function AppShell(): React.ReactElement {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
-      <div className="w-full h-16 fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border">
-        <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
+      <div className="w-full pointer-events-none fixed bottom-0 left-0 z-50 flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border">
+        <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden hidden lg:block lg:shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
+          <Sidebar activeView={activeView} onNavigate={setActiveView} />
+        </div>
+        <div className="lg:hidden w-full pointer-events-auto">
           <Sidebar activeView={activeView} onNavigate={setActiveView} />
         </div>
       </div>
