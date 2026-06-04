@@ -1,6 +1,17 @@
 import { createContext, useContext, useState } from 'react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
+export interface SavedAnalysisFolderItem {
+  video_id: string;
+  title: string;
+  thumbnail_url?: string;
+  channel_name: string;
+  analyzedAt: string;
+  metrics: any | null;
+  scriptPrompt: string;
+  thumbnailPrompt: string;
+}
+
 interface VideoContextValue {
   selectedVideo: ExtractedVideo | null;
   selectVideo: (video: ExtractedVideo) => void;
@@ -10,6 +21,8 @@ interface VideoContextValue {
   savedNiches: ExtractedVideo[];
   saveVideoToNiches: (video: ExtractedVideo) => void;
   removeVideoFromNiches: (videoId: string) => void;
+  analysisFolder: Record<string, SavedAnalysisFolderItem>;
+  saveAnalysisToFolder: (video: ExtractedVideo, metrics: any, scriptPrompt: string, thumbnailPrompt: string) => void;
 }
 
 const VideoContext = createContext<VideoContextValue>({
@@ -21,6 +34,8 @@ const VideoContext = createContext<VideoContextValue>({
   savedNiches: [],
   saveVideoToNiches: () => {},
   removeVideoFromNiches: () => {},
+  analysisFolder: {},
+  saveAnalysisToFolder: () => {},
 });
 
 export function VideoProvider({ children }: { children: React.ReactNode }): React.ReactElement {
@@ -55,6 +70,15 @@ export function VideoProvider({ children }: { children: React.ReactNode }): Reac
     }
   });
 
+  const [analysisFolder, setAnalysisFolder] = useState<Record<string, SavedAnalysisFolderItem>>(() => {
+    try {
+      const saved = localStorage.getItem('niche-radar-analysis-folder');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const selectVideo = (video: ExtractedVideo): void => {
     setSelectedVideo(video);
     // Also persist selected video
@@ -85,6 +109,28 @@ export function VideoProvider({ children }: { children: React.ReactNode }): Reac
     });
   };
 
+  const saveAnalysisToFolder = (video: ExtractedVideo, metrics: any, scriptPrompt: string, thumbnailPrompt: string): void => {
+    setAnalysisFolder(prev => {
+      const updated = {
+        ...prev,
+        [video.video_id]: {
+          video_id: video.video_id,
+          title: video.title,
+          thumbnail_url: video.thumbnail_url,
+          channel_name: video.channel_name,
+          analyzedAt: new Date().toLocaleString(),
+          metrics,
+          scriptPrompt,
+          thumbnailPrompt,
+        }
+      };
+      try {
+        localStorage.setItem('niche-radar-analysis-folder', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
   return (
     <VideoContext.Provider
       value={{
@@ -96,6 +142,8 @@ export function VideoProvider({ children }: { children: React.ReactNode }): Reac
         savedNiches,
         saveVideoToNiches,
         removeVideoFromNiches,
+        analysisFolder,
+        saveAnalysisToFolder,
       }}
     >
       {children}
