@@ -1,3 +1,5 @@
+import { hasRequiredCredentials, getCredentials } from './credentialsService';
+
 export interface YouTubeMetrics {
   views: number;
   estimatedRevenue: number;
@@ -11,55 +13,47 @@ export interface MetricsError {
   message: string;
 }
 
-function getStoredToken(): string | null {
-  return localStorage.getItem('niche-radar-google-token');
-}
-
 export async function fetchYouTubeMetrics(videoId: string): Promise<YouTubeMetrics | MetricsError> {
-  const token = getStoredToken();
+  const { googleToken, channelId } = getCredentials();
 
-  if (!token) {
+  if (!googleToken || !channelId) {
     return {
-      code: 'NO_TOKEN',
-      message: 'Google API token not configured. Please add your token in App Settings.',
+      code: 'MISSING_CREDENTIALS',
+      message: 'Google token and YouTube Channel ID are required. Configure them in App Settings.',
     };
   }
 
   try {
-    const metricsQuery = `
-      SELECT
-        views,
-        estimatedRevenue,
-        cpm,
-        cardClickThroughRate
-      FROM
-        youtubeAnalytics.report_basic_user_owned_content
-      WHERE
-        video = '${videoId}'
-    `;
-
-    const encodedQuery = encodeURIComponent(metricsQuery);
-    const url = `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&metrics=${encodedQuery}&dimensions=video&filters=video==${videoId}`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==${channelId}&metrics=views,estimatedRevenue,cpm,cardClickThroughRate&filters=video==${videoId}&dimensions=day&sort=-day&maxResults=1`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${googleToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 401) {
         return {
           code: 'INVALID_TOKEN',
-          message: 'Google API token is invalid or expired. Please update in App Settings.',
+          message: 'Google token is invalid or expired. Please update in App Settings.',
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          code: 'INSUFFICIENT_PERMISSIONS',
+          message: 'Your YouTube Analytics API access may be restricted. Check your Google Cloud project permissions.',
         };
       }
 
       return {
         code: 'API_ERROR',
-        message: `YouTube Analytics API returned status ${response.status}. Ensure the video is owned by your channel.`,
+        message: `YouTube Analytics API returned status ${response.status}.`,
       };
     }
 
@@ -68,30 +62,36 @@ export async function fetchYouTubeMetrics(videoId: string): Promise<YouTubeMetri
     if (!data.rows || data.rows.length === 0) {
       return {
         code: 'NO_DATA',
-        message: 'No analytics data found for this video. Ensure it is owned by your channel.',
+        message: 'No analytics data available for this video. It may be too new or not monetized.',
       };
     }
 
     const row = data.rows[0];
-    const views = row[0] || 0;
-    const estimatedRevenue = row[1] || 0;
-    const cpm = row[2] || 0;
-    const cardClickThroughRate = row[3] || 0;
+    const columnHeaders = data.columnHeaders || [];
+
+    const getValueByIndex = (index: number) => {
+      return row[index] ?? 0;
+    };
+
+    const views = getValueByIndex(0) || 0;
+    const estimatedRevenue = getValueByIndex(1) || 0;
+    const cpm = getValueByIndex(2) || 0;
+    const cardClickThroughRate = getValueByIndex(3) || 0;
     const netRpm = views > 0 ? (estimatedRevenue / views) * 1000 : 0;
 
     return {
-      views: views,
-      estimatedRevenue: estimatedRevenue,
-      cpm: cpm,
-      cardClickThroughRate: cardClickThroughRate,
-      netRpm: netRpm,
+      views,
+      estimatedRevenue,
+      cpm,
+      cardClickThroughRate,
+      netRpm,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch YouTube metrics';
 
     return {
       code: 'FETCH_ERROR',
-      message: errorMessage,
+      message: `Network error: ${errorMessage}`,
     };
   }
 }

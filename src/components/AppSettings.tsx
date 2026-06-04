@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const STORAGE_KEY_TOKEN = 'niche-radar-google-token';
 const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
+const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
 
 interface CredentialFieldProps {
   id: string;
@@ -121,25 +122,32 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
 export default function AppSettings() {
   const [googleToken, setGoogleToken] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
+  const [channelId, setChannelId] = useState('');
   const [savedToken, setSavedToken] = useState(false);
   const [savedGemini, setSavedGemini] = useState(false);
+  const [savedChannelId, setSavedChannelId] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   useEffect(() => {
     const t = localStorage.getItem(STORAGE_KEY_TOKEN) ?? '';
     const g = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
+    const c = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
     setGoogleToken(t);
     setGeminiKey(g);
+    setChannelId(c);
     setSavedToken(!!t);
     setSavedGemini(!!g);
+    setSavedChannelId(!!c);
   }, []);
 
   const handleSave = () => {
     setSaveStatus('saving');
     localStorage.setItem(STORAGE_KEY_TOKEN, googleToken.trim());
     localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
+    localStorage.setItem(STORAGE_KEY_CHANNEL_ID, channelId.trim());
     setSavedToken(!!googleToken.trim());
     setSavedGemini(!!geminiKey.trim());
+    setSavedChannelId(!!channelId.trim());
     setTimeout(() => setSaveStatus('saved'), 350);
     setTimeout(() => setSaveStatus('idle'), 2200);
   };
@@ -147,13 +155,16 @@ export default function AppSettings() {
   const handleClear = () => {
     localStorage.removeItem(STORAGE_KEY_TOKEN);
     localStorage.removeItem(STORAGE_KEY_GEMINI);
+    localStorage.removeItem(STORAGE_KEY_CHANNEL_ID);
     setGoogleToken('');
     setGeminiKey('');
+    setChannelId('');
     setSavedToken(false);
     setSavedGemini(false);
+    setSavedChannelId(false);
   };
 
-  const anyFilled = googleToken.trim() || geminiKey.trim();
+  const anyFilled = googleToken.trim() || geminiKey.trim() || channelId.trim();
 
   return (
     <div className="animate-slide-up space-y-5">
@@ -227,6 +238,19 @@ export default function AppSettings() {
           <div className="clay-divider" />
 
           <CredentialField
+            id="channel-id"
+            label="YouTube Channel ID"
+            hint="Your YouTube channel ID. Found in YouTube Studio under Account → Basic info. Required for analytics."
+            placeholder="UCxxx···"
+            icon={KeyRound}
+            value={channelId}
+            onChange={setChannelId}
+            saved={savedChannelId}
+          />
+
+          <div className="clay-divider" />
+
+          <CredentialField
             id="gemini-key"
             label="Gemini API Key"
             hint="Powers AI-based niche analysis and keyword clustering via Google's Gemini models."
@@ -287,6 +311,22 @@ export default function AppSettings() {
             }}
           />
           <span>Google Token: {savedToken ? 'Set' : 'Not Set'}</span>
+        </div>
+        <div
+          className="clay-tag"
+          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: savedChannelId ? '#22C55E' : 'var(--border-strong)',
+              boxShadow: savedChannelId ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
+              flexShrink: 0,
+            }}
+          />
+          <span>Channel ID: {savedChannelId ? 'Set' : 'Not Set'}</span>
         </div>
         <div
           className="clay-tag"

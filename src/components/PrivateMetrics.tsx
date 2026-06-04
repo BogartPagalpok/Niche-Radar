@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, DollarSign, MousePointer2, AlertCircle, Loader2 } from 'lucide-react';
+import { TrendingUp, DollarSign, MousePointer2, AlertCircle, Loader2, WifiOff } from 'lucide-react';
 import { fetchYouTubeMetrics, isMetricsError, type YouTubeMetrics } from '../services/metricsService';
+import { hasRequiredCredentials } from '../services/credentialsService';
 
 interface PrivateMetricsProps {
   videoId: string;
@@ -20,7 +21,6 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
   });
 
   useEffect(() => {
-    // Structural architectural enforcement: Do not automatically execute on initial mounting/look-up
     setState({
       metrics: null,
       isLoading: false,
@@ -70,13 +70,15 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
           style={{ animation: 'spin 0.7s linear infinite' }}
         />
         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          Authenticating API token & requesting channel analytics ledger...
+          Fetching analytics from YouTube...
         </span>
       </div>
     );
   }
 
   if (state.error) {
+    const isOffline = !hasRequiredCredentials();
+
     return (
       <div className="space-y-3">
         <div
@@ -84,20 +86,29 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
             display: 'flex',
             alignItems: 'flex-start',
             gap: '10px',
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.2)',
+            background: isOffline ? 'rgba(107,114,128,0.08)' : 'rgba(239,68,68,0.08)',
+            border: isOffline ? '1px solid rgba(107,114,128,0.2)' : '1px solid rgba(239,68,68,0.2)',
             borderRadius: 'var(--radius-md)',
             padding: '12px 14px',
           }}
         >
-          <AlertCircle
-            size={14}
-            strokeWidth={2.5}
-            color="#DC2626"
-            style={{ flexShrink: 0, marginTop: '1px' }}
-          />
-          <p style={{ margin: 0, fontSize: '0.75rem', color: '#991B1B', lineHeight: 1.5 }}>
-            {state.error}
+          {isOffline ? (
+            <WifiOff
+              size={14}
+              strokeWidth={2.5}
+              color="#6B7280"
+              style={{ flexShrink: 0, marginTop: '1px' }}
+            />
+          ) : (
+            <AlertCircle
+              size={14}
+              strokeWidth={2.5}
+              color="#DC2626"
+              style={{ flexShrink: 0, marginTop: '1px' }}
+            />
+          )}
+          <p style={{ margin: 0, fontSize: '0.75rem', color: isOffline ? '#4B5563' : '#991B1B', lineHeight: 1.5 }}>
+            {isOffline ? 'Analytics Offline - Configure API credentials in Settings' : state.error}
           </p>
         </div>
         <button
@@ -105,13 +116,15 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
           className="clay-btn-secondary w-full py-2"
           style={{ fontSize: '0.75rem', fontWeight: 700 }}
         >
-          Retry Authenticated Request
+          {isOffline ? 'Go to Settings' : 'Retry'}
         </button>
       </div>
     );
   }
 
   if (!state.metrics) {
+    const hasCredentials = hasRequiredCredentials();
+
     return (
       <div
         style={{
@@ -128,17 +141,20 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
         }}
       >
         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          Private API Metrics Protected
+          {hasCredentials ? 'Analytics Available' : 'Analytics Offline'}
         </p>
         <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-tertiary)', maxWidth: '280px', lineHeight: 1.4 }}>
-          This operation requires your connected OAuth client access credentials to poll performance logs directly from YouTube Analytics.
+          {hasCredentials
+            ? 'Click below to fetch real-time analytics for this video from YouTube'
+            : 'Configure your Google API token and YouTube Channel ID in Settings to view real analytics'}
         </p>
         <button
           onClick={handleFetchPrivateMetrics}
-          className="clay-btn-red py-2 px-5"
+          className={hasCredentials ? 'clay-btn-red py-2 px-5' : 'clay-btn-secondary py-2 px-5'}
           style={{ fontSize: '0.75rem', fontWeight: 700, marginTop: '2px' }}
+          disabled={!hasCredentials}
         >
-          Unlock Monetization Data
+          {hasCredentials ? 'Load Analytics' : 'Configure in Settings'}
         </button>
       </div>
     );
