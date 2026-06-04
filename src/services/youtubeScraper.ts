@@ -293,7 +293,7 @@ async function fetchWithProxy(url: string, method: string = 'GET', body?: any): 
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
-    // Dynamic key retrieval to prevent hardcoding quota limits
+    // Dynamic key retrieval to avoid hardcoded quota issues
     const apiKey = localStorage.getItem('niche-radar-youtube-api-key') || 'AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E';
 
     if (!continuation) {
@@ -387,7 +387,7 @@ export function generateMockSearchResults(query: string): ExtractedVideo[] {
       description: `Master advanced techniques in ${query}. For experienced practitioners only.`,
       duration: '15:20',
       upload_date: '3 days ago',
-      thumbnail_url: 'https://images.pexels.com/photos/3861969/pexels-photo-3945657.jpeg?auto=compress&cs=tinysrgb&w=600',
+      thumbnail_url: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=600',
       channel_name: 'Expert Academy',
       channel_id: 'UCt-nK2uP5NWOJHSXVN9nAQA',
     },
