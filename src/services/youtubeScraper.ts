@@ -55,7 +55,6 @@ interface YouTubeVideoRenderer {
   channelId?: string;
 }
 
-// --- ADDED FOR SHORTS: extend interface to include reelItemRenderer ---
 interface YouTubeInitialData {
   contents?: {
     twoColumnSearchResultsRenderer?: {
@@ -65,7 +64,6 @@ interface YouTubeInitialData {
             itemSectionRenderer?: {
               contents?: Array<{
                 videoRenderer?: YouTubeVideoRenderer;
-                reelItemRenderer?: any; // Shorts
               }>;
             };
           }>;
@@ -82,7 +80,6 @@ interface YouTubeInitialData {
     appendContinuationItemsAction?: {
       continuationItems?: Array<{
         videoRenderer?: YouTubeVideoRenderer;
-        reelItemRenderer?: any;
         continuationItemRenderer?: {
           continuationEndpoint?: {
             continuationCommand?: {
@@ -94,7 +91,6 @@ interface YouTubeInitialData {
     };
   }>;
 }
-// --- END ADDED ---
 
 function extractViewCount(viewCountText: string | undefined): string {
   if (!viewCountText) return '0';
@@ -208,56 +204,6 @@ function extractVideoFromRenderer(renderer: YouTubeVideoRenderer): ExtractedVide
   }
 }
 
-// --- ADDED FOR SHORTS: extract Shorts from reelItemRenderer ---
-function extractShortFromRenderer(item: any): ExtractedVideo | null {
-  try {
-    const renderer = item.reelItemRenderer;
-    if (!renderer) return null;
-
-    const videoId = renderer.videoId || renderer.reelId;
-    if (!videoId) return null;
-
-    const title = renderer.title?.runs?.[0]?.text || 'Untitled Short';
-
-    let viewCountText = '';
-    if (renderer.viewCountText?.simpleText) {
-      viewCountText = renderer.viewCountText.simpleText;
-    } else if (renderer.viewCountText?.runs) {
-      viewCountText = renderer.viewCountText.runs.map((r: any) => r.text).join('');
-    }
-    const viewCount = extractViewCount(viewCountText);
-
-    const publishedTimeText = renderer.publishedTimeText?.simpleText || '';
-    const uploadDate = parsePublishDate(publishedTimeText);
-
-    const thumbnailUrl = renderer.thumbnail?.thumbnails?.[0]?.url || '';
-
-    let channelName = '';
-    if (renderer.shortBylineText?.simpleText) {
-      channelName = renderer.shortBylineText.simpleText;
-    } else if (renderer.shortBylineText?.runs) {
-      channelName = renderer.shortBylineText.runs.map((r: any) => r.text).join('');
-    }
-
-    const channelId = renderer.channelId || '';
-
-    return {
-      video_id: videoId,
-      title: title,
-      view_count: viewCount,
-      description: '',
-      duration: '0:15', // Shorts are under 60 seconds
-      upload_date: uploadDate,
-      thumbnail_url: thumbnailUrl,
-      channel_name: channelName,
-      channel_id: channelId,
-    };
-  } catch {
-    return null;
-  }
-}
-// --- END ADDED ---
-
 function extractVideosFromInitialData(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
   const videos: ExtractedVideo[] = [];
   let continuation: string | null = null;
@@ -275,14 +221,6 @@ function extractVideosFromInitialData(data: YouTubeInitialData): { videos: Extra
                 videos.push(extracted);
               }
             }
-            // --- ADDED FOR SHORTS ---
-            if (item.reelItemRenderer) {
-              const extracted = extractShortFromRenderer(item);
-              if (extracted) {
-                videos.push(extracted);
-              }
-            }
-            // --- END ADDED ---
           }
         }
       }
@@ -312,16 +250,7 @@ function extractVideosFromContinuation(data: YouTubeInitialData): { videos: Extr
               if (extracted) {
                 videos.push(extracted);
               }
-            }
-            // --- ADDED FOR SHORTS ---
-            if (item.reelItemRenderer) {
-              const extracted = extractShortFromRenderer(item);
-              if (extracted) {
-                videos.push(extracted);
-              }
-            }
-            // --- END ADDED ---
-            if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
+            } else if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
               continuation = item.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
             }
           }
@@ -365,8 +294,7 @@ export async function searchYouTubeVideos(query: string, continuation: string | 
     let htmlContent: string;
 
     if (!continuation) {
-      // --- MODIFIED: removed &sp=EgIQAQ%3D%3D to include both videos and shorts ---
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%3D%3D`;
 
       htmlContent = await fetchWithProxy(searchUrl);
 
