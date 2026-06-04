@@ -1,47 +1,33 @@
 import { useState, useEffect } from 'react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
-import { fetchYouTubeMetrics, isMetricsError, type YouTubeMetrics } from '../services/metricsService';
+import { fetchYouTubeMetrics, isMetricsError } from '../services/metricsService';
 import { generateScriptPrompt, generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
 import { PrivateMetrics } from './PrivateMetrics';
 import { ScriptPromptGenerator } from './ScriptPromptGenerator';
 import { ThumbnailPromptGenerator } from './ThumbnailPromptGenerator';
 import { AnalysisReport } from './AnalysisReport';
 import { Loader2 } from 'lucide-react';
+import { useVideoContext } from '../context/VideoContext';
 
 interface AnalyticsPanelProps {
   video: ExtractedVideo;
 }
 
-interface GeneratorState {
-  scriptPrompt: string;
-  thumbnailPrompt: string;
-  isLoading: boolean;
-}
-
 export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactElement {
-  const [metrics, setMetrics] = useState<YouTubeMetrics | null>(null);
-  const [generatorState, setGeneratorState] = useState<GeneratorState>({
-    scriptPrompt: '',
-    thumbnailPrompt: '',
-    isLoading: false,
-  });
+  // Use global context folder tracking utilities
+  const { analysisFolder, saveAnalysisToFolder } = useVideoContext();
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Structural architectural enforcement: On-demand ONLY. Do not auto-fetch or auto-generate on look-up.
-    setMetrics(null);
-    setGeneratorState({
-      scriptPrompt: '',
-      thumbnailPrompt: '',
-      isLoading: false,
-    });
-  }, [video.video_id]);
+  // Check if this specific video has an existing analysis blueprint in the storage folder
+  const savedData = analysisFolder?.[video.video_id];
 
   const handleTriggerAnalysis = async (): Promise<void> => {
-    setGeneratorState(prev => ({ ...prev, isLoading: true }));
+    setIsLoading(true);
 
+    let finalMetrics = null;
     const metricsResult = await fetchYouTubeMetrics(video.video_id);
     if (!isMetricsError(metricsResult)) {
-      setMetrics(metricsResult);
+      finalMetrics = metricsResult;
     }
 
     const scriptResult = await generateScriptPrompt(video);
@@ -50,19 +36,21 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
     const thumbnailResult = await generateThumbnailPrompt(video);
     const thumbnailPrompt = !isGeneratorError(thumbnailResult) ? thumbnailResult.prompt : '';
 
-    setGeneratorState({
-      scriptPrompt: scriptPrompt,
-      thumbnailPrompt: thumbnailPrompt,
-      isLoading: false,
-    });
+    // Commit data structurally to our global persistent local folder storage path
+    saveAnalysisToFolder(video, finalMetrics, scriptPrompt, thumbnailPrompt);
+    
+    setIsLoading(false);
   };
 
-  const hasGeneratedData = generatorState.scriptPrompt !== '' || generatorState.thumbnailPrompt !== '';
+  // Read variables directly out of the folder definition object
+  const hasGeneratedData = !!savedData;
+  const currentMetrics = savedData ? savedData.metrics : null;
+  const currentScriptPrompt = savedData ? savedData.scriptPrompt : '';
+  const currentThumbnailPrompt = savedData ? savedData.thumbnailPrompt : '';
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Run Analysis Trigger Gateway Controls */}
-      {!hasGeneratedData && !generatorState.isLoading && (
+    <div className="space-y-6 animate-fade-in" style={{ paddingBottom: '32px' }}>
+      {!hasGeneratedData && !isLoading && (
         <div
           style={{
             background: 'var(--bg-panel)',
@@ -93,7 +81,7 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
         </div>
       )}
 
-      {generatorState.isLoading && (
+      {isLoading && (
         <div
           style={{
             display: 'flex',
@@ -120,20 +108,11 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
         </div>
       )}
 
-      {hasGeneratedData && !generatorState.isLoading && (
+      {hasGeneratedData && !isLoading && (
         <>
           {/* Section 1: Performance Metrics */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               1. Performance Metrics
             </h2>
             <PrivateMetrics videoId={video.video_id} />
@@ -143,16 +122,7 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
           {/* Section 2: Script Prompt */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               2. Content Script Prompt
             </h2>
             <ScriptPromptGenerator video={video} />
@@ -162,16 +132,7 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
           {/* Section 3: Thumbnail Prompt */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               3. Thumbnail Prompt
             </h2>
             <ThumbnailPromptGenerator video={video} />
@@ -181,23 +142,14 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
 
           {/* Section 4: Analysis Report */}
           <section>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.01em',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}
-            >
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               4. Complete Analysis Report
             </h2>
             <AnalysisReport
               video={video}
-              metrics={metrics}
-              scriptPrompt={generatorState.scriptPrompt}
-              thumbnailPrompt={generatorState.thumbnailPrompt}
+              metrics={currentMetrics}
+              scriptPrompt={currentScriptPrompt}
+              thumbnailPrompt={currentThumbnailPrompt}
             />
           </section>
         </>
