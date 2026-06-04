@@ -25,7 +25,27 @@ const VideoContext = createContext<VideoContextValue>({
 
 export function VideoProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [selectedVideo, setSelectedVideo] = useState<ExtractedVideo | null>(null);
-  const [searchedVideos, setSearchedVideos] = useState<ExtractedVideo[]>([]);
+  
+  // Load from localStorage on init
+  const [searchedVideos, setSearchedVideosState] = useState<ExtractedVideo[]>(() => {
+    try {
+      const stored = localStorage.getItem('niche-radar-search-results');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Wrapper that also saves to localStorage
+  const setSearchedVideos = (videos: ExtractedVideo[]) => {
+    setSearchedVideosState(videos);
+    try {
+      localStorage.setItem('niche-radar-search-results', JSON.stringify(videos));
+    } catch {
+      // Storage full or unavailable
+    }
+  };
+
   const [savedNiches, setSavedNiches] = useState<ExtractedVideo[]>(() => {
     const stored = localStorage.getItem('niche-radar-saved-niches');
     try {
@@ -37,10 +57,15 @@ export function VideoProvider({ children }: { children: React.ReactNode }): Reac
 
   const selectVideo = (video: ExtractedVideo): void => {
     setSelectedVideo(video);
+    // Also persist selected video
+    try {
+      localStorage.setItem('niche-radar-selected-video', JSON.stringify(video));
+    } catch {}
   };
 
   const clearSelection = (): void => {
     setSelectedVideo(null);
+    localStorage.removeItem('niche-radar-selected-video');
   };
 
   const saveVideoToNiches = (video: ExtractedVideo): void => {
