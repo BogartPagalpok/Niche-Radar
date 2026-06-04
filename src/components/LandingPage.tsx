@@ -1,4 +1,4 @@
-import { Youtube, TrendingUp, Search, Zap, Settings, Layers, ArrowRight, History } from 'lucide-react';
+import { Youtube, TrendingUp, Search, Zap, Settings, Layers, ArrowRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface LandingPageProps {
@@ -57,7 +57,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
           </div>
         </div>
 
-        {/* RIGHT — Features + Steps + Changelog */}
+        {/* RIGHT — Features + Steps */}
         <div className="w-full lg:w-[45%] flex flex-col justify-center py-6">
           <div style={{ maxWidth: '500px', width: '100%' }} className="flex flex-col gap-4 mx-auto lg:mr-0">
             
@@ -72,7 +72,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                 const Icon = feature.icon;
                 return (
                   <div key={feature.title} className="stat-card flex items-start gap-3.5 p-4 sm:p-4.5" style={{ cursor: 'default' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifycontent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-clay-sm)' }}>
+                    <div className="flex items-center justify-center flex-shrink-0" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-surface)', boxShadow: 'var(--shadow-clay-sm)' }}>
                       <Icon size={18} strokeWidth={2} color="var(--yt-red)" />
                     </div>
                     <div>
@@ -94,7 +94,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                 const Icon = item.icon;
                 return (
                   <div key={item.step} style={{ display: 'flex', gap: '14px', padding: '18px 20px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #FF3333, #CC0000)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0, boxShadow: 'var(--shadow-red)' }}>
+                    <div className="flex items-center justify-center flex-shrink-0" style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #FF3333, #CC0000)', color: '#FFF', fontSize: '0.8rem', fontWeight: 800, boxShadow: 'var(--shadow-red)' }}>
                       {item.step}
                     </div>
                     <div>
@@ -117,27 +117,6 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
                   Get a key →
                 </a>
               </p>
-            </div>
-
-            {/* Changelog Section */}
-            <div style={{ background: 'var(--bg-panel)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', padding: '16px 20px' }}>
-              <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
-                <History size={15} color="var(--yt-red)" />
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>CHANGELOG</span>
-              </div>
-              <div className="flex flex-col gap-2.5">
-                <div>
-                  <div className="flex items-center justify-between" style={{ marginBottom: '2px' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>v1.1.0 — UI Overhaul</span>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>June 2026</span>
-                  </div>
-                  <ul style={{ margin: 0, paddingLeft: '14px', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    <li>Enlarged typography structure to resolve layout dead spaces on ultra-wide screens</li>
-                    <li>Removed redundant brand identifier imagery from primary column</li>
-                    <li>Refactored grid wrapper breakpoints to handle vertical scaling clipping bugs</li>
-                  </ul>
-                </div>
-              </div>
             </div>
 
             {/* Footer — mobile only */}
