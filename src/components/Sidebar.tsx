@@ -138,32 +138,46 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
             );
           })}
 
-          {/* UIVERSE ANIMATED TOGGLE SWITCH (MOBILE INLINE SCALING) */}
-          <label className="theme-switch" style={{ '--toggle-size': '14px', marginLeft: '4px', flexShrink: 0 } as React.CSSProperties}>
-            <input 
-              type="checkbox" 
-              className="theme-switch__checkbox" 
-              checked={isDark} 
-              onChange={toggleTheme} 
-            />
-            <div className="theme-switch__container">
-              <div className="theme-switch__circle-container">
-                <div className="theme-switch__sun-moon-container">
-                  <div className="theme-switch__moon">
-                    <div className="theme-switch__spot"></div>
-                    <div className="theme-switch__spot"></div>
-                    <div className="theme-switch__spot"></div>
-                  </div>
+          {/* MOBILE INLINE TOGGLE PANEL ROW LINK */}
+          <div 
+            onClick={toggleTheme}
+            style={{
+              width: '42px',
+              height: '24px',
+              backgroundColor: isDark ? '#1D1F2C' : '#3D7EAE',
+              borderRadius: '100px',
+              position: 'relative',
+              transition: 'all 0.3s ease',
+              overflow: 'hidden',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)',
+              cursor: 'pointer',
+              marginRight: '4px',
+              flexShrink: 0,
+            }}
+          >
+            <div 
+              style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                backgroundColor: isDark ? '#C4C9D1' : '#ECCA2F',
+                position: 'absolute',
+                top: '3px',
+                left: isDark ? '21px' : '3px',
+                transition: 'all 0.3s cubic-bezier(0, -0.02, 0.35, 1.17)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                display: 'flex',
+                overflow: 'hidden',
+              }}
+            >
+              {isDark && (
+                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <div style={{ position: 'absolute', top: '4px', left: '2px', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
+                  <div style={{ position: 'absolute', top: '10px', left: '9px', width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
                 </div>
-              </div>
-              <div className="theme-switch__clouds"></div>
-              <div className="theme-switch__stars-container">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 131" fill="currentColor" style={{ width: '100%', height: 'auto' }}>
-                  <path d="M129.5 45.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM102.5 17.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM109.5 89.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM35.5 31.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM49.5 81.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM22.5 69.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
-                </svg>
-              </div>
+              )}
             </div>
-          </label>
+          </div>
         </div>
       </div>
 
@@ -368,9 +382,10 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
         >
           {/* DESKTOP FOOTER FLUSH TOGGLE BLOCK */}
           <div
+            onClick={toggleTheme}
             style={{
               width: '100%',
-              height: '48px',
+              height: '44px',
               boxSizing: 'border-box',
               padding: '0rem 0.75rem',
               background: 'var(--bg-surface)',
@@ -379,38 +394,75 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              cursor: 'pointer',
+              userSelect: 'none',
+              boxShadow: 'var(--shadow-clay-sm)',
             }}
           >
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
               {isDark ? 'Dark Mode' : 'Light Mode'}
             </span>
             
-            {/* UIVERSE ANIMATED TOGGLE SWITCH (DESKTOP) */}
-            <label className="theme-switch" style={{ '--toggle-size': '15px' } as React.CSSProperties}>
-              <input 
-                type="checkbox" 
-                className="theme-switch__checkbox" 
-                checked={isDark} 
-                onChange={toggleTheme} 
-              />
-              <div className="theme-switch__container">
-                <div className="theme-switch__circle-container">
-                  <div className="theme-switch__sun-moon-container">
-                    <div className="theme-switch__moon">
-                      <div className="theme-switch__spot"></div>
-                      <div className="theme-switch__spot"></div>
-                      <div className="theme-switch__spot"></div>
-                    </div>
+            {/* INLINE SELF-CONTAINED TOGGLE INNER LAYOUT */}
+            <div 
+              style={{
+                width: '54px',
+                height: '26px',
+                backgroundColor: isDark ? '#1D1F2C' : '#3D7EAE',
+                borderRadius: '100px',
+                position: 'relative',
+                transition: 'all 0.3s ease',
+                overflow: 'hidden',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)',
+              }}
+            >
+              {/* Sliding Sun/Moon Core Element */}
+              <div 
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  backgroundColor: isDark ? '#C4C9D1' : '#ECCA2F',
+                  position: 'absolute',
+                  top: '3px',
+                  left: isDark ? '31px' : '3px',
+                  transition: 'all 0.3s cubic-bezier(0, -0.02, 0.35, 1.17)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Moon Spots */}
+                {isDark && (
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <div style={{ position: 'absolute', top: '5px', left: '3px', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
+                    <div style={{ position: 'absolute', top: '11px', left: '10px', width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
+                    <div style={{ position: 'absolute', top: '3px', left: '11px', width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
                   </div>
-                </div>
-                <div className="theme-switch__clouds"></div>
-                <div className="theme-switch__stars-container">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 131" fill="currentColor" style={{ width: '100%', height: 'auto' }}>
-                    <path d="M129.5 45.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM102.5 17.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM109.5 89.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM35.5 31.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM49.5 81.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM22.5 69.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
-                  </svg>
-                </div>
+                )}
               </div>
-            </label>
+
+              {/* Decorative Cloud/Stars Layer */}
+              {!isDark ? (
+                <div 
+                  style={{ 
+                    position: 'absolute', 
+                    bottom: '-4px', 
+                    right: '4px', 
+                    width: '24px', 
+                    height: '10px', 
+                    backgroundColor: '#F3FDFF', 
+                    borderRadius: '10px',
+                    opacity: 0.8
+                  }} 
+                />
+              ) : (
+                <div style={{ position: 'absolute', left: '6px', top: '6px', display: 'flex', gap: '4px', opacity: 0.6 }}>
+                  <div style={{ width: '2px', height: '2px', backgroundColor: '#FFF', borderRadius: '50%' }} />
+                  <div style={{ width: '3px', height: '3px', backgroundColor: '#FFF', borderRadius: '50%', transform: 'translateY(4px)' }} />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Credits */}
