@@ -97,7 +97,8 @@ export default function NicheSearch(): React.ReactElement {
     
     try {
       const expandedQuery = await expandQuery(trimmedQuery);
-      console.log("Original Search:", trimmedQuery, "| Expanded Query:", expandedQuery);
+      // Fix: Ensure we actually perform the search with the result, even if it matches the original
+      console.log("Original Search:", trimmedQuery, "| Final Search:", expandedQuery);
       performSearch(expandedQuery, null);
     } catch (err) {
       console.error("Expansion failed, falling back:", err);
