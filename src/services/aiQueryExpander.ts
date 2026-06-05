@@ -43,7 +43,10 @@ export async function identifyRelevantTopic(query: string): Promise<string> {
     }
     
     const data = await response.json();
-    const refined = data.choices[0].message.content.trim().replace(/^["'`]|["'`\.]+$/g, '');
+    
+    // FIX: Safely extract content to prevent the 'trim' undefined error
+    const rawContent = data.choices?.[0]?.message?.content || '';
+    const refined = rawContent.trim().replace(/^["'`]|["'`\.]+$/g, '');
     
     return refined || query;
   } catch (e) {
