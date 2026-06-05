@@ -96,13 +96,11 @@ export default function NicheSearch(): React.ReactElement {
     loadMoreCountRef.current = 0;
     
     try {
-      // AI Expansion Logic
       const expandedQuery = await expandQuery(trimmedQuery);
       console.log("Original Search:", trimmedQuery, "| Expanded Query:", expandedQuery);
-      
       performSearch(expandedQuery, null);
     } catch (err) {
-      console.error("Expansion failed, using original query:", err);
+      console.error("Expansion failed, falling back:", err);
       performSearch(trimmedQuery, null);
     }
   }, [state.query, performSearch]);
@@ -134,6 +132,7 @@ export default function NicheSearch(): React.ReactElement {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
+      {/* Header */}
       <div>
         <h2
           style={{
@@ -151,6 +150,7 @@ export default function NicheSearch(): React.ReactElement {
         </p>
       </div>
 
+      {/* Search Bar */}
       <div
         style={{
           background: 'var(--bg-panel)',
@@ -225,6 +225,7 @@ export default function NicheSearch(): React.ReactElement {
         </div>
       </div>
 
+      {/* Error message */}
       {state.error && (
         <div
           style={{
@@ -250,6 +251,7 @@ export default function NicheSearch(): React.ReactElement {
         </div>
       )}
 
+      {/* Results List */}
       <div
         style={{
           flex: 1,
@@ -305,6 +307,7 @@ export default function NicheSearch(): React.ReactElement {
           />
         ))}
 
+        {/* Infinite scroll sentinel */}
         {state.hasSearched && state.videos.length > 0 && state.continuation && (
           <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {state.isLoadingMore && (
@@ -320,6 +323,21 @@ export default function NicheSearch(): React.ReactElement {
                 </span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* End of results indicator */}
+        {state.hasSearched && state.videos.length > 0 && !state.continuation && (
+          <div
+            style={{
+              textAlign: 'center',
+              paddingTop: '20px',
+              paddingBottom: '40px',
+            }}
+          >
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+              No more results
+            </span>
           </div>
         )}
       </div>
