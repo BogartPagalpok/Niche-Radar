@@ -293,7 +293,7 @@ async function fetchWithProxy(url: string): Promise<string> {
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
-    // STEP 1: AI Niche Interpretation
+    // Workflow: Step 1 Interpretation
     const refinedQuery = continuation ? query : await identifyRelevantTopic(query);
     console.log(`[Workflow] Raw: "${query}" -> Interpreter: "${refinedQuery}"`);
 
