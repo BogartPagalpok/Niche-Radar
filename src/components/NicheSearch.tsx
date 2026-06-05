@@ -16,7 +16,6 @@ interface SearchState {
   error: string | null;
   continuation: string | null;
   hasSearched: boolean;
-  expandedQuery: string | null; // Added to safely track the AI target for infinite scroll
 }
 
 export default function NicheSearch(): React.ReactElement {
@@ -30,13 +29,12 @@ export default function NicheSearch(): React.ReactElement {
     error: null,
     continuation: null,
     hasSearched: false,
-    expandedQuery: null,
   });
 
   const loadMoreCountRef = useRef<number>(0);
 
   const performSearch = useCallback(
-    async (searchQuery: string, seedQuery: string, continuation: string | null = null): Promise<void> => {
+    async (query: string, continuation: string | null = null): Promise<void> => {
       const isInitialSearch = !continuation;
 
       setState(prev => ({
@@ -46,7 +44,7 @@ export default function NicheSearch(): React.ReactElement {
       }));
 
       try {
-        const result = await searchYouTubeVideos(searchQuery, continuation);
+        const result = await searchYouTubeVideos(query, continuation);
         const parsedVideos = result.videos;
 
         if (parsedVideos.length === 0 && isInitialSearch) {
@@ -64,20 +62,19 @@ export default function NicheSearch(): React.ReactElement {
         setState(prev => {
           const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
           
-          // FIX: Pass the videos through the Ranking Engine before updating state
-          const rankedVideos = processVideoResults(seedQuery, [searchQuery], [totalVideos]);
+          // Apply the ranking engine to sort/filter before showing on screen
+          const rankedVideos = processVideoResults(prev.query, [query], [totalVideos]);
           
           setTimeout(() => setSearchedVideos(rankedVideos), 0);
 
           return {
             ...prev,
-            videos: rankedVideos, // Use the ranked videos instead of raw videos
+            videos: rankedVideos,
             continuation: result.continuation,
             isLoading: false,
             isLoadingMore: false,
             hasSearched: true,
-            query: seedQuery, // Keep the UI input matching what the user typed
-            expandedQuery: searchQuery, // Save the AI target for load-more requests
+            query: query,
           };
         });
       } catch (err) {
@@ -99,20 +96,19 @@ export default function NicheSearch(): React.ReactElement {
     const trimmedQuery = state.query.trim();
     if (!trimmedQuery) return;
 
-    // Clear previous results on new search
-    setState(prev => ({ ...prev, isLoading: true, videos: [], hasSearched: true, continuation: null, error: null }));
-    setSearchedVideos([]);
+    setState(prev => ({ ...prev, isLoading: true }));
     loadMoreCountRef.current = 0;
     
     try {
       const expandedQuery = await expandQuery(trimmedQuery);
+      // Fix: Ensure we actually perform the search with the result, even if it matches the original
       console.log("Original Search:", trimmedQuery, "| Final Search:", expandedQuery);
-      performSearch(expandedQuery, trimmedQuery, null);
+      performSearch(expandedQuery, null);
     } catch (err) {
       console.error("Expansion failed, falling back:", err);
-      performSearch(trimmedQuery, trimmedQuery, null);
+      performSearch(trimmedQuery, null);
     }
-  }, [state.query, performSearch, setSearchedVideos]);
+  }, [state.query, performSearch]);
 
   const handleLoadMore = useCallback((): void => {
     if (state.isLoadingMore || !state.continuation || state.isLoading || loadMoreCountRef.current > 0) {
@@ -120,11 +116,9 @@ export default function NicheSearch(): React.ReactElement {
     }
 
     loadMoreCountRef.current += 1;
-    
-    // Fallback to query if expandedQuery isn't set
-    const targetSearch = state.expandedQuery || state.query;
-    performSearch(targetSearch, state.query, state.continuation);
-  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, state.expandedQuery, performSearch]);
+
+    performSearch(state.query, state.continuation);
+  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, performSearch]);
 
   const sentinelRef = useInfiniteScroll(handleLoadMore, {
     threshold: 0.1,
