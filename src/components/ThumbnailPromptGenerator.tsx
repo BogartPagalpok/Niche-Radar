@@ -3,6 +3,9 @@ import { Copy, CheckCircle2, Loader2, AlertCircle, Play } from 'lucide-react';
 import { generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
+// This UI component is correct and requires no changes. 
+// The multimodal API fix needs to be applied to the `geminiService.ts` file where `generateThumbnailPrompt` is defined.
+
 interface ThumbnailPromptGeneratorProps {
   video: ExtractedVideo;
 }
@@ -43,7 +46,7 @@ export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProp
         isLoading: false,
         error: result.message,
         copied: false,
-      });
+    });
     } else {
       setState({
         prompt: result.prompt,
