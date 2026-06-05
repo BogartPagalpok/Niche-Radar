@@ -5,6 +5,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { VideoCard } from './VideoCard';
 import { useVideoContext } from '../context/VideoContext';
 import { useTheme } from '../context/ThemeContext';
+import { expandQuery } from '../services/aiQueryExpander';
 
 interface SearchState {
   query: string;
@@ -87,12 +88,16 @@ export default function NicheSearch(): React.ReactElement {
     [setSearchedVideos]
   );
 
-  const handleSearch = useCallback((): void => {
+  const handleSearch = useCallback(async (): Promise<void> => {
     const trimmedQuery = state.query.trim();
     if (!trimmedQuery) return;
 
     loadMoreCountRef.current = 0;
-    performSearch(trimmedQuery, null);
+    
+    // AI Expansion Logic injected here
+    const expandedQuery = await expandQuery(trimmedQuery);
+    
+    performSearch(expandedQuery, null);
   }, [state.query, performSearch]);
 
   const handleLoadMore = useCallback((): void => {
@@ -318,7 +323,7 @@ export default function NicheSearch(): React.ReactElement {
 
         {/* Infinite scroll sentinel */}
         {state.hasSearched && state.videos.length > 0 && state.continuation && (
-          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifycontent: 'center' }}>
+          <div ref={sentinelRef} style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {state.isLoadingMore && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Loader2
