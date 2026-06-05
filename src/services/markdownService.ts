@@ -12,7 +12,18 @@ export function generateMarkdownDocument(params: MarkdownDocumentParams): string
   const { video, metrics, scriptPrompt, thumbnailPrompt } = params;
   const timestamp = new Date().toLocaleString();
 
-  const markdown = `# Niche Radar: Complete Video Analysis Report
+  const markdown = `# 🛑 SYSTEM INSTRUCTIONS FOR AI
+You are my expert YouTube production assistant. This document contains a multi-step workflow. 
+**CRITICAL:** You must execute these steps sequentially. DO NOT generate everything at once.
+
+**WORKFLOW RULES:**
+1. **STEP 1:** Read the "Script Replication Prompt" below and generate the full script. 
+2. **PAUSE:** Once the script is finished, STOP GENERATING. Do not look at the Thumbnail section yet. 
+3. **ASK:** End your response by asking: *"Script complete. Ready for Step 2: Thumbnail Prompts?"*
+4. **WAIT:** Wait for me to type "Next" or "Yes" before executing the "Thumbnail Prompt" section.
+---
+
+# Niche Radar: Complete Video Analysis Report
 
 **Generated:** ${timestamp}
 
