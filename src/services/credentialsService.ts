@@ -8,6 +8,12 @@ export const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
 export const STORAGE_KEY_CLIENT_ID = 'niche-radar-client-id';
 export const STORAGE_KEY_CLIENT_SECRET = 'niche-radar-client-secret';
 
+export const STORAGE_KEY_CEREBRAS = 'niche_radar_cerebras_key';
+export const STORAGE_KEY_GROQ = 'niche_radar_groq_key';
+export const STORAGE_KEY_GITHUB = 'niche_radar_github_token';
+export const STORAGE_KEY_SUPADATA = 'niche_radar_supadata_key';
+export const STORAGE_KEY_APIFY = 'niche_radar_apify_key';
+
 // Legacy alias so old imports keep compiling
 export const STORAGE_KEY_TOKEN = STORAGE_KEY_ACCESS_TOKEN;
 
