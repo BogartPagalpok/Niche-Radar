@@ -92,13 +92,19 @@ export default function NicheSearch(): React.ReactElement {
     const trimmedQuery = state.query.trim();
     if (!trimmedQuery) return;
 
+    setState(prev => ({ ...prev, isLoading: true }));
     loadMoreCountRef.current = 0;
     
-    // AI Expansion Logic
-    const expandedQuery = await expandQuery(trimmedQuery);
-    console.log("Original Search:", trimmedQuery, "| Expanded Query:", expandedQuery);
-    
-    performSearch(expandedQuery, null);
+    try {
+      // AI Expansion Logic
+      const expandedQuery = await expandQuery(trimmedQuery);
+      console.log("Original Search:", trimmedQuery, "| Expanded Query:", expandedQuery);
+      
+      performSearch(expandedQuery, null);
+    } catch (err) {
+      console.error("Expansion failed, using original query:", err);
+      performSearch(trimmedQuery, null);
+    }
   }, [state.query, performSearch]);
 
   const handleLoadMore = useCallback((): void => {
