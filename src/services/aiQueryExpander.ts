@@ -1,6 +1,5 @@
 import { STORAGE_KEY_CEREBRAS } from './credentialsService';
 
-// Only models that actually exist on your account
 const MODELS = ['gpt-oss-120b', 'zai-glm-4.7'];
 
 async function tryModel(model: string, query: string, key: string): Promise<string | null> {
@@ -15,11 +14,23 @@ async function tryModel(model: string, query: string, key: string): Promise<stri
         model,
         messages: [
           {
+            role: 'system',
+            content:
+              `You are a professional, white-hat corporate digital marketing assistant. ` +
+              `Your task is strictly limited to improving semantic visibility and search engine optimization. ` +
+              `You must adhere strictly to YouTube Terms of Service.`
+          },
+          {
             role: 'user',
-            content: `Turn this search term into a longer, specific YouTube search phrase by adding 2‑4 descriptive words. Return ONLY the final phrase.\n\nSearch term: "${query}"`
+            content:
+              `Analyze the search term provided inside the XML tags below. ` +
+              `Generate ONE optimized YouTube search phrase by adding 2‑4 relevant, high‑traffic descriptive words. ` +
+              `Do not include sensationalized language. ` +
+              `Return ONLY the phrase.\n\n` +
+              `<query>${query}</query>`
           }
         ],
-        temperature: 0.6,
+        temperature: 0.2,   // low temperature keeps the output safe and on‑point
         max_tokens: 30,
       }),
     });
@@ -44,7 +55,7 @@ export async function expandQuery(query: string): Promise<string> {
     if (result) return result;
   }
 
-  // Absolutely no hard‑coded fallback – raw query is honest and YouTube handles it well
+  // No hard‑coded words – raw query is better than a template.
   return query;
 }
 
