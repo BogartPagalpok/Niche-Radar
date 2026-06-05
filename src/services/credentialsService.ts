@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase';
+
 export const STORAGE_KEY_ACCESS_TOKEN = 'niche-radar-google-token';
 export const STORAGE_KEY_REFRESH_TOKEN = 'niche-radar-refresh-token';
 export const STORAGE_KEY_TOKEN_EXPIRY = 'niche-radar-token-expiry';
@@ -83,11 +85,18 @@ async function doRefresh(): Promise<string | null> {
 
 /**
  * Returns a valid access token, automatically refreshing via Refresh Token if expired.
+ * Priority: 1) Supabase session provider_token  2) localStorage token with expiry check + auto-refresh
  * Every API caller should use this instead of reading localStorage directly.
  */
 export async function getValidToken(): Promise<string | null> {
-  const current = localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
+  // 1. Prefer Supabase-managed Google token (set when user signs in via Google OAuth)
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.provider_token) {
+    return session.provider_token;
+  }
 
+  // 2. Fall back to manually stored token (sandbox / manual credentials flow)
+  const current = localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
   if (current && !isTokenExpired()) {
     return current;
   }
@@ -116,7 +125,8 @@ export async function refreshGoogleToken(): Promise<{ googleToken: string | null
 
 export function hasRequiredCredentials(): boolean {
   const { accessToken, channelId } = getCredentials();
-  return !!(accessToken && channelId);
+  // channelId is optional — token alone is sufficient for most API calls
+  return !!(accessToken);
 }
 
 export function hasYouTubeApiKey(): boolean {
