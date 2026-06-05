@@ -1,10 +1,6 @@
 export async function expandQuery(query: string): Promise<string> {
   const cerebrasKey = localStorage.getItem('niche_radar_cerebras_key');
-  
-  if (!cerebrasKey) {
-    console.warn("Cerebras API key not found.");
-    return query;
-  }
+  if (!cerebrasKey) return query;
 
   try {
     const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
@@ -14,13 +10,10 @@ export async function expandQuery(query: string): Promise<string> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // UPDATED: Using the production model found in {62B3D6F8-299A-48C2-A452-D6855FE5F909}.png
-        model: 'gpt-oss-120b',
+        // Try the preview model if the production model is overwhelmed
+        model: 'zai-glm-4.7', 
         messages: [
-          { 
-            role: 'system', 
-            content: 'You are a search query optimizer. Output ONLY a concise, technical, niche-optimized YouTube search string. No extra text.' 
-          },
+          { role: 'system', content: 'You are a search query optimizer. Return ONLY a concise, technical YouTube search string.' },
           { role: 'user', content: query }
         ],
         temperature: 0.3,
@@ -28,16 +21,17 @@ export async function expandQuery(query: string): Promise<string> {
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Status ${response.status}: ${errorText}`);
+    // If 429, just return query immediately without waiting
+    if (response.status === 429) {
+      console.warn("Cerebras busy, using raw query.");
+      return query;
     }
 
+    if (!response.ok) throw new Error(`API Status ${response.status}`);
+    
     const data = await response.json();
     return data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
-    
   } catch (e) {
-    console.error("AI Expansion Error:", e);
     return query;
   }
 }
