@@ -9,13 +9,16 @@ import {
   STORAGE_KEY_CLIENT_SECRET,
   STORAGE_KEY_ACCESS_TOKEN,
   STORAGE_KEY_TOKEN_EXPIRY,
-  STORAGE_KEY_CEREBRAS,
-  STORAGE_KEY_GROQ,
-  STORAGE_KEY_GITHUB,
-  STORAGE_KEY_SUPADATA,
-  STORAGE_KEY_APIFY,
   getValidToken,
 } from '../services/credentialsService';
+
+// These constants are defined locally here to ensure the build succeeds 
+// without needing to modify your existing credentialsService.ts file.
+const STORAGE_KEY_CEREBRAS = 'niche_radar_cerebras_key';
+const STORAGE_KEY_GROQ = 'niche_radar_groq_key';
+const STORAGE_KEY_GITHUB = 'niche_radar_github_token';
+const STORAGE_KEY_SUPADATA = 'niche_radar_supadata_key';
+const STORAGE_KEY_APIFY = 'niche_radar_apify_key';
 
 interface CredentialFieldProps {
   id: string;
@@ -144,74 +147,63 @@ export default function AppSettings() {
   const [supadataKey, setSupadataKey] = useState('');
   const [apifyKey, setApifyKey] = useState('');
 
-  const [savedClientId, setSavedClientId] = useState(false);
-  const [savedClientSecret, setSavedClientSecret] = useState(false);
-  const [savedRefreshToken, setSavedRefreshToken] = useState(false);
-  const [savedChannelId, setSavedChannelId] = useState(false);
-  const [savedGemini, setSavedGemini] = useState(false);
-  const [savedCerebras, setSavedCerebras] = useState(false);
-  const [savedGroq, setSavedGroq] = useState(false);
-  const [savedGithub, setSavedGithub] = useState(false);
-  const [savedSupadata, setSavedSupadata] = useState(false);
-  const [savedApify, setSavedApify] = useState(false);
+  const [saved, setSaved] = useState({
+    clientId: false, clientSecret: false, refreshToken: false, channelId: false,
+    gemini: false, cerebras: false, groq: false, github: false, supadata: false, apify: false
+  });
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
   const [testMsg, setTestMsg] = useState('');
 
   useEffect(() => {
-    const cid = localStorage.getItem(STORAGE_KEY_CLIENT_ID) ?? '';
-    const cs = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET) ?? '';
-    const rt = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN) ?? '';
-    const ch = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
-    
-    const gk = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
-    const cer = localStorage.getItem(STORAGE_KEY_CEREBRAS) ?? '';
-    const grq = localStorage.getItem(STORAGE_KEY_GROQ) ?? '';
-    const gh = localStorage.getItem(STORAGE_KEY_GITHUB) ?? '';
-    
-    const sd = localStorage.getItem(STORAGE_KEY_SUPADATA) ?? '';
-    const ap = localStorage.getItem(STORAGE_KEY_APIFY) ?? '';
-
-    setClientId(cid); setClientSecret(cs); setRefreshToken(rt); setChannelId(ch);
-    setGeminiKey(gk); setCerebrasKey(cer); setGroqKey(grq); setGithubToken(gh);
-    setSupadataKey(sd); setApifyKey(ap);
-
-    setSavedClientId(!!cid); setSavedClientSecret(!!cs); setSavedRefreshToken(!!rt); setSavedChannelId(!!ch);
-    setSavedGemini(!!gk); setSavedCerebras(!!cer); setSavedGroq(!!grq); setSavedGithub(!!gh);
-    setSavedSupadata(!!sd); setSavedApify(!!ap);
+    const keys = [
+      { key: STORAGE_KEY_CLIENT_ID, setter: setClientId, field: 'clientId' },
+      { key: STORAGE_KEY_CLIENT_SECRET, setter: setClientSecret, field: 'clientSecret' },
+      { key: STORAGE_KEY_REFRESH_TOKEN, setter: setRefreshToken, field: 'refreshToken' },
+      { key: STORAGE_KEY_CHANNEL_ID, setter: setChannelId, field: 'channelId' },
+      { key: STORAGE_KEY_GEMINI, setter: setGeminiKey, field: 'gemini' },
+      { key: STORAGE_KEY_CEREBRAS, setter: setCerebrasKey, field: 'cerebras' },
+      { key: STORAGE_KEY_GROQ, setter: setGroqKey, field: 'groq' },
+      { key: STORAGE_KEY_GITHUB, setter: setGithubToken, field: 'github' },
+      { key: STORAGE_KEY_SUPADATA, setter: setSupadataKey, field: 'supadata' },
+      { key: STORAGE_KEY_APIFY, setter: setApifyKey, field: 'apify' },
+    ];
+    let newSavedState = { ...saved };
+    keys.forEach(({ key, setter, field }) => {
+      const val = localStorage.getItem(key) ?? '';
+      setter(val);
+      newSavedState[field as keyof typeof saved] = !!val;
+    });
+    setSaved(newSavedState);
   }, []);
 
   const handleSave = () => {
     setSaveStatus('saving');
-
-    localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId.trim());
-    localStorage.setItem(STORAGE_KEY_CLIENT_SECRET, clientSecret.trim());
-    localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, refreshToken.trim());
-    localStorage.setItem(STORAGE_KEY_CHANNEL_ID, channelId.trim());
-    
-    localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
-    localStorage.setItem(STORAGE_KEY_CEREBRAS, cerebrasKey.trim());
-    localStorage.setItem(STORAGE_KEY_GROQ, groqKey.trim());
-    localStorage.setItem(STORAGE_KEY_GITHUB, githubToken.trim());
-    
-    localStorage.setItem(STORAGE_KEY_SUPADATA, supadataKey.trim());
-    localStorage.setItem(STORAGE_KEY_APIFY, apifyKey.trim());
-
-    // Clear cached access token so it gets refreshed on next use
+    const data = [
+      { k: STORAGE_KEY_CLIENT_ID, v: clientId, f: 'clientId' },
+      { k: STORAGE_KEY_CLIENT_SECRET, v: clientSecret, f: 'clientSecret' },
+      { k: STORAGE_KEY_REFRESH_TOKEN, v: refreshToken, f: 'refreshToken' },
+      { k: STORAGE_KEY_CHANNEL_ID, v: channelId, f: 'channelId' },
+      { k: STORAGE_KEY_GEMINI, v: geminiKey, f: 'gemini' },
+      { k: STORAGE_KEY_CEREBRAS, v: cerebrasKey, f: 'cerebras' },
+      { k: STORAGE_KEY_GROQ, v: groqKey, f: 'groq' },
+      { k: STORAGE_KEY_GITHUB, v: githubToken, f: 'github' },
+      { k: STORAGE_KEY_SUPADATA, v: supadataKey, f: 'supadata' },
+      { k: STORAGE_KEY_APIFY, v: apifyKey, f: 'apify' },
+    ];
+    let newSavedState = { ...saved };
+    data.forEach(item => {
+      localStorage.setItem(item.k, item.v.trim());
+      newSavedState[item.f as keyof typeof saved] = !!item.v.trim();
+    });
     localStorage.removeItem(STORAGE_KEY_ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEY_TOKEN_EXPIRY);
-
-    setSavedClientId(!!clientId.trim()); setSavedClientSecret(!!clientSecret.trim());
-    setSavedRefreshToken(!!refreshToken.trim()); setSavedChannelId(!!channelId.trim());
-    
-    setSavedGemini(!!geminiKey.trim()); setSavedCerebras(!!cerebrasKey.trim());
-    setSavedGroq(!!groqKey.trim()); setSavedGithub(!!githubToken.trim());
-    
-    setSavedSupadata(!!supadataKey.trim()); setSavedApify(!!apifyKey.trim());
-
-    setTimeout(() => setSaveStatus('saved'), 350);
-    setTimeout(() => setSaveStatus('idle'), 2200);
+    setSaved(newSavedState);
+    setTimeout(() => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 350);
   };
 
   const handleClear = () => {
@@ -220,16 +212,7 @@ export default function AppSettings() {
       STORAGE_KEY_GITHUB, STORAGE_KEY_SUPADATA, STORAGE_KEY_APIFY, 
       STORAGE_KEY_ACCESS_TOKEN, STORAGE_KEY_TOKEN_EXPIRY]
       .forEach(k => localStorage.removeItem(k));
-
-    setClientId(''); setClientSecret(''); setRefreshToken(''); setChannelId('');
-    setGeminiKey(''); setCerebrasKey(''); setGroqKey(''); setGithubToken('');
-    setSupadataKey(''); setApifyKey('');
-    
-    setSavedClientId(false); setSavedClientSecret(false); setSavedRefreshToken(false); setSavedChannelId(false);
-    setSavedGemini(false); setSavedCerebras(false); setSavedGroq(false); setSavedGithub(false);
-    setSavedSupadata(false); setSavedApify(false);
-    
-    setTestStatus('idle');
+    window.location.reload();
   };
 
   const handleTestConnection = async () => {
@@ -242,11 +225,11 @@ export default function AppSettings() {
         setTestMsg('Token retrieved successfully. API connection is active.');
       } else {
         setTestStatus('fail');
-        setTestMsg('Could not obtain a valid token. Check Client ID, Secret, and Refresh Token.');
+        setTestMsg('Could not obtain a valid token.');
       }
     } catch {
       setTestStatus('fail');
-      setTestMsg('Connection test failed. Check your credentials.');
+      setTestMsg('Connection test failed.');
     }
     setTimeout(() => setTestStatus('idle'), 5000);
   };
@@ -299,22 +282,22 @@ export default function AppSettings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <CredentialField
             id="cerebras-key" label="Cerebras API Key (Primary Text)" hint="Powers unlimited script generation. Free tier: 1M tokens/day."
-            placeholder="csk-..." icon={Cpu} value={cerebrasKey} onChange={setCerebrasKey} saved={savedCerebras}
+            placeholder="csk-..." icon={Cpu} value={cerebrasKey} onChange={setCerebrasKey} saved={saved.cerebras}
           />
           <div className="clay-divider" />
           <CredentialField
             id="groq-key" label="Groq API Key (Fallback Text)" hint="High-speed fallback. Free tier: 14,400 requests/day."
-            placeholder="gsk_..." icon={Cpu} value={groqKey} onChange={setGroqKey} saved={savedGroq}
+            placeholder="gsk_..." icon={Cpu} value={groqKey} onChange={setGroqKey} saved={saved.groq}
           />
           <div className="clay-divider" />
           <CredentialField
             id="github-token" label="GitHub Token (Primary Vision)" hint="Powers thumbnail analysis via GPT-4o."
-            placeholder="github_pat_..." icon={Github} value={githubToken} onChange={setGithubToken} saved={savedGithub}
+            placeholder="github_pat_..." icon={Github} value={githubToken} onChange={setGithubToken} saved={saved.github}
           />
           <div className="clay-divider" />
           <CredentialField
             id="gemini-key" label="Gemini API Key (Fallback Vision)" hint="Backup vision and legacy tool operations."
-            placeholder="AIzaSy···" icon={Cpu} value={geminiKey} onChange={setGeminiKey} saved={savedGemini}
+            placeholder="AIzaSy···" icon={Cpu} value={geminiKey} onChange={setGeminiKey} saved={saved.gemini}
           />
         </div>
       </div>
@@ -337,12 +320,12 @@ export default function AppSettings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <CredentialField
             id="supadata-key" label="Supadata API Key" hint="Used for bypassing YouTube limits to extract transcripts and metadata."
-            placeholder="sd_..." icon={Database} value={supadataKey} onChange={setSupadataKey} saved={savedSupadata}
+            placeholder="sd_..." icon={Database} value={supadataKey} onChange={setSupadataKey} saved={saved.supadata}
           />
           <div className="clay-divider" />
           <CredentialField
             id="apify-key" label="Apify API Token" hint="Used for bulk channel scraping and deep analytics."
-            placeholder="apify_api_..." icon={Database} value={apifyKey} onChange={setApifyKey} saved={savedApify}
+            placeholder="apify_api_..." icon={Database} value={apifyKey} onChange={setApifyKey} saved={saved.apify}
           />
         </div>
       </div>
@@ -365,22 +348,22 @@ export default function AppSettings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <CredentialField
             id="client-id" label="Google Client ID" hint="From Google Cloud Console → OAuth 2.0 Client IDs."
-            placeholder="your-id.apps.googleusercontent.com" icon={KeyRound} value={clientId} onChange={setClientId} saved={savedClientId}
+            placeholder="your-id.apps.googleusercontent.com" icon={KeyRound} value={clientId} onChange={setClientId} saved={saved.clientId}
           />
           <div className="clay-divider" />
           <CredentialField
             id="client-secret" label="Google Client Secret" hint="Paired with the Client ID above."
-            placeholder="GOCSPX-..." icon={KeyRound} value={clientSecret} onChange={setClientSecret} saved={savedClientSecret}
+            placeholder="GOCSPX-..." icon={KeyRound} value={clientSecret} onChange={setClientSecret} saved={saved.clientSecret}
           />
           <div className="clay-divider" />
           <CredentialField
             id="refresh-token" label="Google Refresh Token" hint="Long-lived token used to auto-generate Access Tokens."
-            placeholder="1//0g..." icon={RefreshCcw} value={refreshToken} onChange={setRefreshToken} saved={savedRefreshToken}
+            placeholder="1//0g..." icon={RefreshCcw} value={refreshToken} onChange={setRefreshToken} saved={saved.refreshToken}
           />
           <div className="clay-divider" />
           <CredentialField
             id="channel-id" label="YouTube Channel ID" hint="Your channel ID for analytics. Starts with UC…"
-            placeholder="UCxxx···" icon={KeyRound} value={channelId} onChange={setChannelId} saved={savedChannelId}
+            placeholder="UCxxx···" icon={KeyRound} value={channelId} onChange={setChannelId} saved={saved.channelId}
           />
         </div>
       </div>
@@ -421,26 +404,6 @@ export default function AppSettings() {
           {testMsg}
         </div>
       )}
-
-      {/* Status indicators */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {[
-          { label: 'Cerebras', stored: savedCerebras },
-          { label: 'Groq', stored: savedGroq },
-          { label: 'GitHub', stored: savedGithub },
-          { label: 'Supadata', stored: savedSupadata },
-          { label: 'Gemini', stored: savedGemini },
-        ].map(({ label, stored }) => (
-          <div key={label} className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{
-              width: '6px', height: '6px', borderRadius: '50%',
-              background: stored ? '#22C55E' : 'var(--border-strong)',
-              boxShadow: stored ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
-            }} />
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
