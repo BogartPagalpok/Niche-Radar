@@ -16,24 +16,23 @@ export async function expandQuery(query: string): Promise<string> {
         messages: [
           {
             role: 'system',
-            content: `You are a YouTube search query writer. Turn the user's word(s) into a longer, real-world search phrase that someone would actually type into YouTube. Add 2-4 descriptive words. Output only the phrase.`
+            content: `Rewrite this search into a longer YouTube phrase:`
           },
           { role: 'user', content: query }
         ],
         temperature: 0.8,
-        max_tokens: 30,
+        max_tokens: 25,
+        stop: ["\n"]
       }),
     });
     const data = await res.json();
     const expanded = data.choices?.[0]?.message?.content?.trim();
 
-    // If it's empty, null, or identical to input, just return the original query
     if (expanded && expanded.toLowerCase() !== query.toLowerCase()) {
       return expanded;
     }
   } catch {}
 
-  // No hardcoded fallback – raw query is better than nonsense
   return query;
 }
 
