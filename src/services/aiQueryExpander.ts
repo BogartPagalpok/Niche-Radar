@@ -2,7 +2,7 @@ export async function expandQuery(query: string): Promise<string> {
   const cerebrasKey = localStorage.getItem('niche_radar_cerebras_key');
   
   if (!cerebrasKey) {
-    console.warn("Cerebras API key not found. Skipping expansion.");
+    console.warn("Cerebras API key not found.");
     return query;
   }
 
@@ -14,17 +14,14 @@ export async function expandQuery(query: string): Promise<string> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // Verified model name for Cerebras API
-        model: 'llama-3.1-8b',
+        // UPDATED: Using the production model found in {62B3D6F8-299A-48C2-A452-D6855FE5F909}.png
+        model: 'gpt-oss-120b',
         messages: [
           { 
             role: 'system', 
-            content: 'You are a search query optimizer for Niche Radar. Transform the user query into a hyper-specific, SEO-optimized YouTube search string. Return ONLY the search string.' 
+            content: 'You are a search query optimizer. Output ONLY a concise, technical, niche-optimized YouTube search string. No extra text.' 
           },
-          { 
-            role: 'user', 
-            content: `Optimize this for YouTube: "${query}"` 
-          }
+          { role: 'user', content: query }
         ],
         temperature: 0.3,
         max_tokens: 50
@@ -37,12 +34,10 @@ export async function expandQuery(query: string): Promise<string> {
     }
 
     const data = await response.json();
-    const expanded = data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
-    
-    return expanded.length > 3 ? expanded : query;
+    return data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
     
   } catch (e) {
     console.error("AI Expansion Error:", e);
-    return query; // Fallback
+    return query;
   }
 }
