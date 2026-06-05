@@ -6,7 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 const STORAGE_KEY_TOKEN = 'niche-radar-google-token';
 const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
 const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
-const STORAGE_KEY_YOUTUBE_API_KEY = 'niche-radar-youtube-api-key'; // NEW
+const STORAGE_KEY_YOUTUBE_API_KEY = 'niche-radar-youtube-api-key';
+const STORAGE_KEY_CLIENT_ID = 'niche-radar-client-id'; // NEW
+const STORAGE_KEY_CLIENT_SECRET = 'niche-radar-client-secret'; // NEW
 
 interface CredentialFieldProps {
   id: string;
@@ -123,11 +125,17 @@ export default function AppSettings() {
   const [googleToken, setGoogleToken] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [channelId, setChannelId] = useState('');
-  const [youtubeApiKey, setYoutubeApiKey] = useState(''); // NEW
+  const [youtubeApiKey, setYoutubeApiKey] = useState('');
+  const [clientId, setClientId] = useState(''); // NEW
+  const [clientSecret, setClientSecret] = useState(''); // NEW
+  
   const [savedToken, setSavedToken] = useState(false);
   const [savedGemini, setSavedGemini] = useState(false);
   const [savedChannelId, setSavedChannelId] = useState(false);
-  const [savedYoutubeApiKey, setSavedYoutubeApiKey] = useState(false); // NEW
+  const [savedYoutubeApiKey, setSavedYoutubeApiKey] = useState(false);
+  const [savedClientId, setSavedClientId] = useState(false); // NEW
+  const [savedClientSecret, setSavedClientSecret] = useState(false); // NEW
+  
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   useEffect(() => {
@@ -135,14 +143,22 @@ export default function AppSettings() {
     const g = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
     const c = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
     const y = localStorage.getItem(STORAGE_KEY_YOUTUBE_API_KEY) ?? '';
+    const cid = localStorage.getItem(STORAGE_KEY_CLIENT_ID) ?? '';
+    const cs = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET) ?? '';
+    
     setGoogleToken(t);
     setGeminiKey(g);
     setChannelId(c);
     setYoutubeApiKey(y);
+    setClientId(cid);
+    setClientSecret(cs);
+    
     setSavedToken(!!t);
     setSavedGemini(!!g);
     setSavedChannelId(!!c);
     setSavedYoutubeApiKey(!!y);
+    setSavedClientId(!!cid);
+    setSavedClientSecret(!!cs);
   }, []);
 
   const handleSave = () => {
@@ -150,11 +166,17 @@ export default function AppSettings() {
     localStorage.setItem(STORAGE_KEY_TOKEN, googleToken.trim());
     localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
     localStorage.setItem(STORAGE_KEY_CHANNEL_ID, channelId.trim());
-    localStorage.setItem(STORAGE_KEY_YOUTUBE_API_KEY, youtubeApiKey.trim()); // NEW
+    localStorage.setItem(STORAGE_KEY_YOUTUBE_API_KEY, youtubeApiKey.trim());
+    localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId.trim()); // NEW
+    localStorage.setItem(STORAGE_KEY_CLIENT_SECRET, clientSecret.trim()); // NEW
+    
     setSavedToken(!!googleToken.trim());
     setSavedGemini(!!geminiKey.trim());
     setSavedChannelId(!!channelId.trim());
-    setSavedYoutubeApiKey(!!youtubeApiKey.trim()); // NEW
+    setSavedYoutubeApiKey(!!youtubeApiKey.trim());
+    setSavedClientId(!!clientId.trim());
+    setSavedClientSecret(!!clientSecret.trim());
+    
     setTimeout(() => setSaveStatus('saved'), 350);
     setTimeout(() => setSaveStatus('idle'), 2200);
   };
@@ -163,22 +185,29 @@ export default function AppSettings() {
     localStorage.removeItem(STORAGE_KEY_TOKEN);
     localStorage.removeItem(STORAGE_KEY_GEMINI);
     localStorage.removeItem(STORAGE_KEY_CHANNEL_ID);
-    localStorage.removeItem(STORAGE_KEY_YOUTUBE_API_KEY); // NEW
+    localStorage.removeItem(STORAGE_KEY_YOUTUBE_API_KEY);
+    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
+    localStorage.removeItem(STORAGE_KEY_CLIENT_SECRET);
+    
     setGoogleToken('');
     setGeminiKey('');
     setChannelId('');
     setYoutubeApiKey('');
+    setClientId('');
+    setClientSecret('');
+    
     setSavedToken(false);
     setSavedGemini(false);
     setSavedChannelId(false);
     setSavedYoutubeApiKey(false);
+    setSavedClientId(false);
+    setSavedClientSecret(false);
   };
 
-  const anyFilled = googleToken.trim() || geminiKey.trim() || channelId.trim() || youtubeApiKey.trim();
+  const anyFilled = googleToken.trim() || geminiKey.trim() || channelId.trim() || youtubeApiKey.trim() || clientId.trim() || clientSecret.trim();
 
   return (
     <div className="animate-slide-up space-y-5">
-      {/* Header */}
       <div>
         <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
           App Settings
@@ -188,7 +217,6 @@ export default function AppSettings() {
         </p>
       </div>
 
-      {/* Security Notice */}
       <div
         style={{
           display: 'flex',
@@ -208,7 +236,6 @@ export default function AppSettings() {
         </p>
       </div>
 
-      {/* Main Credential Panel */}
       <div
         style={{
           background: 'var(--bg-panel)',
@@ -236,46 +263,62 @@ export default function AppSettings() {
           <CredentialField
             id="google-token"
             label="Google Client Access Token"
-            hint="Required for authenticated YouTube Data API v3 requests. Obtain from Google Cloud Console under Credentials."
+            hint="Required for authenticated YouTube Data API v3 requests."
             placeholder="ya29.A0A···"
             icon={KeyRound}
             value={googleToken}
             onChange={setGoogleToken}
             saved={savedToken}
           />
-
           <div className="clay-divider" />
-
           <CredentialField
-            id="youtube-api-key" // NEW
+            id="client-id"
+            label="Google Client ID"
+            hint="Required for automatic token refreshing."
+            placeholder="your-id.apps.googleusercontent.com"
+            icon={KeyRound}
+            value={clientId}
+            onChange={setClientId}
+            saved={savedClientId}
+          />
+          <div className="clay-divider" />
+          <CredentialField
+            id="client-secret"
+            label="Google Client Secret"
+            hint="Required for automatic token refreshing."
+            placeholder="GOCSPX-..."
+            icon={KeyRound}
+            value={clientSecret}
+            onChange={setClientSecret}
+            saved={savedClientSecret}
+          />
+          <div className="clay-divider" />
+          <CredentialField
+            id="youtube-api-key"
             label="YouTube Data API Key (optional)"
-            hint="Simple API key for public channel stats. Recommended if OAuth token is not available. Create at Google Cloud Console → Credentials."
+            hint="Simple API key for public channel stats."
             placeholder="AIzaSy···"
             icon={Youtube}
             value={youtubeApiKey}
             onChange={setYoutubeApiKey}
             saved={savedYoutubeApiKey}
           />
-
           <div className="clay-divider" />
-
           <CredentialField
             id="channel-id"
             label="YouTube Channel ID"
-            hint="Your YouTube channel ID. Found in YouTube Studio under Account → Basic info. Required for analytics."
+            hint="Required for analytics."
             placeholder="UCxxx···"
             icon={KeyRound}
             value={channelId}
             onChange={setChannelId}
             saved={savedChannelId}
           />
-
           <div className="clay-divider" />
-
           <CredentialField
             id="gemini-key"
             label="Gemini API Key"
-            hint="Powers AI-based niche analysis and keyword clustering via Google's Gemini models."
+            hint="Powers AI-based niche analysis."
             placeholder="AIzaSy···"
             icon={Cpu}
             value={geminiKey}
@@ -285,7 +328,6 @@ export default function AppSettings() {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-3">
         <button
           onClick={handleSave}
@@ -316,7 +358,6 @@ export default function AppSettings() {
         )}
       </div>
 
-      {/* Status indicators */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedToken ? '#22C55E' : 'var(--border-strong)', boxShadow: savedToken ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
