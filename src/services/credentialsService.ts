@@ -4,6 +4,8 @@ export const STORAGE_KEY_REFRESH_TOKEN = 'niche-radar-refresh-token';
 export const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
 export const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
 export const STORAGE_KEY_YOUTUBE_API_KEY = 'niche-radar-youtube-api-key';
+export const STORAGE_KEY_CLIENT_ID = 'niche-radar-client-id'; // NEW
+export const STORAGE_KEY_CLIENT_SECRET = 'niche-radar-client-secret'; // NEW
 
 export interface Credentials {
   googleToken: string | null;
@@ -30,18 +32,24 @@ export function saveCredentials(token: string, refreshToken?: string) {
   }
 }
 
-// THIS IS THE MISSING PIECE TO FIX THE 401 ERROR
+// FIXED: Now reads dynamic inputs from the new UI fields
 export async function refreshGoogleToken(): Promise<{ googleToken: string | null }> {
   const refreshToken = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN);
-  if (!refreshToken) return { googleToken: null };
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  const clientSecret = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET);
+
+  if (!refreshToken || !clientId || !clientSecret) {
+    console.error('Missing credentials for auto-refresh. Please check Settings.');
+    return { googleToken: null };
+  }
 
   try {
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: 'YOUR_GOOGLE_CLIENT_ID', // Replace with your actual ID
-        client_secret: 'YOUR_GOOGLE_CLIENT_SECRET', // NOTE: Ideally use a backend to hide this
+        client_id: clientId,
+        client_secret: clientSecret,
         refresh_token: refreshToken,
         grant_type: 'refresh_token',
       }),
@@ -51,6 +59,8 @@ export async function refreshGoogleToken(): Promise<{ googleToken: string | null
     if (data.access_token) {
       saveCredentials(data.access_token);
       return { googleToken: data.access_token };
+    } else {
+      console.error('Refresh token response error:', data);
     }
   } catch (error) {
     console.error('Failed to refresh token:', error);
