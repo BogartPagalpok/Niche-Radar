@@ -10,14 +10,13 @@ import { processVideoResults } from '../services/rankingEngine';
 
 interface SearchState {
   query: string;
-  activeSeed: string;
-  activeTarget: string;
   videos: ExtractedVideo[];
   isLoading: boolean;
   isLoadingMore: boolean;
   error: string | null;
   continuation: string | null;
   hasSearched: boolean;
+  expandedQuery: string | null; // Added to safely track the AI target for infinite scroll
 }
 
 export default function NicheSearch(): React.ReactElement {
@@ -25,20 +24,19 @@ export default function NicheSearch(): React.ReactElement {
   const { isDark } = useTheme();
   const [state, setState] = useState<SearchState>({
     query: '',
-    activeSeed: '',
-    activeTarget: '',
     videos: [],
     isLoading: false,
     isLoadingMore: false,
     error: null,
     continuation: null,
     hasSearched: false,
+    expandedQuery: null,
   });
 
   const loadMoreCountRef = useRef<number>(0);
 
   const performSearch = useCallback(
-    async (seedQuery: string, searchTarget: string, continuation: string | null = null): Promise<void> => {
+    async (searchQuery: string, seedQuery: string, continuation: string | null = null): Promise<void> => {
       const isInitialSearch = !continuation;
 
       setState(prev => ({
@@ -48,7 +46,7 @@ export default function NicheSearch(): React.ReactElement {
       }));
 
       try {
-        const result = await searchYouTubeVideos(searchTarget, continuation);
+        const result = await searchYouTubeVideos(searchQuery, continuation);
         const parsedVideos = result.videos;
 
         if (parsedVideos.length === 0 && isInitialSearch) {
@@ -56,7 +54,7 @@ export default function NicheSearch(): React.ReactElement {
             ...prev,
             isLoading: false,
             hasSearched: true,
-            error: 'No highly relevant videos passed the filtering matrix. Try a different seed.',
+            error: 'No videos found. Try a different search term.',
             videos: [],
           }));
           setSearchedVideos([]);
@@ -64,22 +62,22 @@ export default function NicheSearch(): React.ReactElement {
         }
 
         setState(prev => {
-          const totalRawVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
+          const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
           
-          // Apply the SEO Matrix Scoring to rank and deduplicate
-          const finalRankedVideos = processVideoResults(seedQuery, [searchTarget], [totalRawVideos]);
-
-          setTimeout(() => setSearchedVideos(finalRankedVideos), 0);
+          // FIX: Pass the videos through the Ranking Engine before updating state
+          const rankedVideos = processVideoResults(seedQuery, [searchQuery], [totalVideos]);
+          
+          setTimeout(() => setSearchedVideos(rankedVideos), 0);
 
           return {
             ...prev,
-            videos: finalRankedVideos,
+            videos: rankedVideos, // Use the ranked videos instead of raw videos
             continuation: result.continuation,
             isLoading: false,
             isLoadingMore: false,
             hasSearched: true,
-            activeSeed: seedQuery,
-            activeTarget: searchTarget,
+            query: seedQuery, // Keep the UI input matching what the user typed
+            expandedQuery: searchQuery, // Save the AI target for load-more requests
           };
         });
       } catch (err) {
@@ -101,31 +99,32 @@ export default function NicheSearch(): React.ReactElement {
     const trimmedQuery = state.query.trim();
     if (!trimmedQuery) return;
 
-    setState(prev => ({ ...prev, isLoading: true, error: null, hasSearched: true, videos: [], continuation: null }));
+    // Clear previous results on new search
+    setState(prev => ({ ...prev, isLoading: true, videos: [], hasSearched: true, continuation: null, error: null }));
     setSearchedVideos([]);
     loadMoreCountRef.current = 0;
     
     try {
-      console.log(`Expanding seed keyword: "${trimmedQuery}"...`);
       const expandedQuery = await expandQuery(trimmedQuery);
-      console.log("AI Target Acquired:", expandedQuery);
-      
-      await performSearch(trimmedQuery, expandedQuery, null);
+      console.log("Original Search:", trimmedQuery, "| Final Search:", expandedQuery);
+      performSearch(expandedQuery, trimmedQuery, null);
     } catch (err) {
       console.error("Expansion failed, falling back:", err);
-      await performSearch(trimmedQuery, trimmedQuery, null);
+      performSearch(trimmedQuery, trimmedQuery, null);
     }
   }, [state.query, performSearch, setSearchedVideos]);
 
   const handleLoadMore = useCallback((): void => {
-    if (state.isLoadingMore || !state.continuation || state.isLoading || loadMoreCountRef.current > 0 || !state.activeTarget) {
+    if (state.isLoadingMore || !state.continuation || state.isLoading || loadMoreCountRef.current > 0) {
       return;
     }
 
     loadMoreCountRef.current += 1;
-
-    performSearch(state.activeSeed, state.activeTarget, state.continuation);
-  }, [state.isLoadingMore, state.continuation, state.isLoading, state.activeSeed, state.activeTarget, performSearch]);
+    
+    // Fallback to query if expandedQuery isn't set
+    const targetSearch = state.expandedQuery || state.query;
+    performSearch(targetSearch, state.query, state.continuation);
+  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, state.expandedQuery, performSearch]);
 
   const sentinelRef = useInfiniteScroll(handleLoadMore, {
     threshold: 0.1,
