@@ -19,16 +19,11 @@ export async function identifyRelevantTopic(query: string): Promise<string> {
         messages: [
           { 
             role: 'system', 
-            content: `You are the Niche-Radar AI Engine. Follow this exact 3-step workflow:
+            content: `You are the Niche-Radar AI Engine. Follow this exact flow:
             
-            Step 1: Analyze the user input to identify the specific niche, industry, or target audience.
-            Step 2: Formulate a highly targeted, high-converting YouTube search query based on that exact niche.
-            Step 3: Output ONLY the final formulated search query to be fed directly into the YouTube scraper.
-            
-            CRITICAL CONSTRAINTS:
-            - Do NOT output your reasoning or the text for Step 1 and Step 2.
-            - Do NOT wrap the final result in quotes, brackets, or punctuation.
-            - Output absolutely nothing except the final search string.` 
+            1. IDENTIFY THE USER'S WORD AND RELEVANT WORDS THAT ARE CURRENTLY HOT ON YOUTUBE.
+            2. FORMAT FOR THE SCRAPER (Output ONLY the final combined search string).
+            3. PREPARE FOR RESULTS (No quotes, no punctuation, no conversational filler).` 
           },
           { role: 'user', content: query }
         ],
@@ -47,8 +42,9 @@ export async function identifyRelevantTopic(query: string): Promise<string> {
     const rawContent = data.choices?.[0]?.message?.content || '';
     const refined = rawContent.trim().replace(/^["'`]|["'`\.]+$/g, '');
     
+    // Safety net to prevent UI crash
     if (refined.toLowerCase() === query.toLowerCase()) {
-      return `${query} advanced tutorial`;
+      return `${query} trending currently`;
     }
     
     return refined || query;
