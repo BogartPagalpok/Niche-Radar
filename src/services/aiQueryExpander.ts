@@ -1,35 +1,17 @@
-// youtubeScraper.ts
+// src/services/aiQueryExpander.ts
+// Complete YouTube SEO Machine — Query Expander + Fetcher + Scorer
+// Zero hard‑coded keywords, auto‑adapts to any year or intent.
 
 import { Innertube } from 'youtubei.js';
 
-// ------------------------------------------------------------------
-// Types
-// ------------------------------------------------------------------
-interface Candidate {
-  id: string;
-  title: string;
-  channelId: string;
-  channelName: string;
-  views: number;
-  published: Date | null;
-  durationSec: number;
-}
-
-interface ScoredCandidate extends Candidate {
-  score: number;
-}
-
-// ------------------------------------------------------------------
-// 1. QUERY EXPANSION (zero hard‑coded keywords)
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
+// 1. DYNAMIC QUERY EXPANSION (LLM + live autocomplete)
+// ------------------------------------------------------------
 async function expandQuery(query: string): Promise<string> {
-  const cerebrasKey =
-    typeof localStorage !== 'undefined'
-      ? localStorage.getItem('niche_radar_cerebras_key')
-      : null;
+  const cerebrasKey = localStorage.getItem('niche_radar_cerebras_key');
   const currentYear = new Date().getFullYear();
 
-  // --- Primary: tiny LLM prompt (avoids hallucination, no forced tutorial) ---
+  // --- Primary: LLM with a tiny, precise prompt (prevents hallucination) ---
   if (cerebrasKey) {
     try {
       const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
@@ -74,16 +56,16 @@ async function expandQuery(query: string): Promise<string> {
     }
   } catch { /* fall through */ }
 
-  // --- Fallback 2: append current year (still no hardcoded year) ---
+  // --- Fallback 2: Append current year (still dynamic) ---
   if (query.split(' ').length <= 2) {
     return `${query} ${currentYear}`;
   }
   return query;
 }
 
-// ------------------------------------------------------------------
-// 2. TITLE SIMILARITY (Jaccard on stems)
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
+// 2. TITLE SIMILARITY (Jaccard index on stemmed words)
+// ------------------------------------------------------------
 function computeRelevance(title: string, expandedQuery: string): number {
   const stem = (s: string) =>
     s
@@ -98,9 +80,19 @@ function computeRelevance(title: string, expandedQuery: string): number {
   return intersection.size / (union.size || 1);
 }
 
-// ------------------------------------------------------------------
-// 3. FETCH CANDIDATE VIDEOS
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
+// 3. FETCH CANDIDATE VIDEOS (all search terms are dynamic)
+// ------------------------------------------------------------
+interface Candidate {
+  id: string;
+  title: string;
+  channelId: string;
+  channelName: string;
+  views: number;
+  published: Date | null;
+  durationSec: number;
+}
+
 async function fetchCandidates(rawQuery: string): Promise<Candidate[]> {
   const expanded = await expandQuery(rawQuery);
   const yt = await Innertube.create();
@@ -124,7 +116,7 @@ async function fetchCandidates(rawQuery: string): Promise<Candidate[]> {
     }
   };
 
-  // Primary search with expanded phrase
+  // Primary search with the expanded phrase
   const mainSearch = await yt.search(expanded, { type: 'video' });
   addVideos(mainSearch.videos);
 
@@ -140,16 +132,20 @@ async function fetchCandidates(rawQuery: string): Promise<Candidate[]> {
   return candidates;
 }
 
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
 // 4. SEO SCORING & FINAL PICK
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
+interface ScoredCandidate extends Candidate {
+  score: number;
+}
+
 async function pickBestVideo(
   candidates: Candidate[],
   expandedQuery: string
 ): Promise<ScoredCandidate | null> {
   if (!candidates.length) return null;
 
-  // Fetch subscriber counts for all unique channels
+  // Batch fetch subscriber counts
   const channelIds = [...new Set(candidates.map((c) => c.channelId))];
   const subsMap = new Map<string, number>();
   try {
@@ -172,7 +168,6 @@ async function pickBestVideo(
 
   const now = Date.now();
 
-  // Raw metrics
   const withMetrics = candidates.map((v) => {
     const subs = subsMap.get(v.channelId) || 1;
     const ageHours = v.published
@@ -183,7 +178,7 @@ async function pickBestVideo(
     return { ...v, subs, ageHours, velocity, relevance };
   });
 
-  // Min‑max normalisation (0‑1)
+  // Min‑max normalisation (no hardcoded weights)
   const norm = (arr: number[]) => {
     const min = Math.min(...arr);
     const max = Math.max(...arr);
@@ -205,9 +200,16 @@ async function pickBestVideo(
   return scored[0];
 }
 
-// ------------------------------------------------------------------
-// 5. MAIN EXPORT – the whole machine in one call
-// ------------------------------------------------------------------
+// ------------------------------------------------------------
+// 5. MAIN EXPORT – the whole machine (keeps old expandQuery too)
+// ------------------------------------------------------------
+export async function expandQuery(query: string): Promise<string> {
+  return await expandQueryInternal(query); // expose if needed
+}
+
+// Internal alias
+const expandQueryInternal = expandQuery;
+
 export async function findBestVideo(query: string): Promise<{
   videoId: string;
   title: string;
@@ -216,7 +218,7 @@ export async function findBestVideo(query: string): Promise<{
   score: number;
   expandedQuery: string;
 }> {
-  const expanded = await expandQuery(query);
+  const expanded = await expandQueryInternal(query);
   const candidates = await fetchCandidates(query);
   const best = await pickBestVideo(candidates, expanded);
 
@@ -234,13 +236,7 @@ export async function findBestVideo(query: string): Promise<{
   };
 }
 
-// ------------------------------------------------------------------
-// EXAMPLE USAGE (remove or keep for testing)
-// ------------------------------------------------------------------
-/*
-(async () => {
-  // Set your Cerebras key in localStorage (browser) or env variable before calling
-  const result = await findBestVideo('Mr Beast');
-  console.log('Best video:', result);
-})();
-*/
+// For backward compatibility – you may already use identifyRelevantTopic
+export async function identifyRelevantTopic(query: string): Promise<string> {
+  return await expandQueryInternal(query);
+}
