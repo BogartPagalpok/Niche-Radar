@@ -1,4 +1,4 @@
-// src/services/aiQueryExpander.ts
+import { STORAGE_KEY_CEREBRAS } from './credentialsService';
 
 export async function expandQuery(query: string): Promise<string> {
   const cerebrasKey = localStorage.getItem('niche_radar_cerebras_key');
