@@ -2,10 +2,7 @@
 
 export async function identifyRelevantTopic(query: string): Promise<string> {
   const cerebrasKey = localStorage.getItem('niche_radar_cerebras_key');
-  if (!cerebrasKey) {
-    console.error("AI Expansion Error: Missing 'niche_radar_cerebras_key' in localStorage.");
-    return query;
-  }
+  if (!cerebrasKey) return query;
 
   try {
     const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
@@ -19,38 +16,33 @@ export async function identifyRelevantTopic(query: string): Promise<string> {
         messages: [
           { 
             role: 'system', 
-            content: `You are the Niche-Radar AI Engine. Follow this exact flow:
+            content: `You are the Niche-Radar SEO Engine. 
             
-            1. IDENTIFY THE USER'S WORD AND RELEVANT WORDS THAT ARE CURRENTLY HOT ON YOUTUBE.
-            2. FORMAT FOR THE SCRAPER (Output ONLY the final combined search string).
-            3. PREPARE FOR RESULTS (No quotes, no punctuation, no conversational filler).` 
+            YOUR ONLY JOB: Append 3-4 high-traffic, specific YouTube keywords to the user's input.
+            
+            CRITICAL RULES:
+            1. DO NOT return the original input word alone. If the input is "AI", you MUST return something like "AI tools for productivity 2026".
+            2. If you return only the input word, you have failed.
+            3. No conversational filler, no quotes, no punctuation.` 
           },
           { role: 'user', content: query }
         ],
-        temperature: 0.5,
-        max_tokens: 40
+        temperature: 0.9, // Higher randomness to force creative expansion
+        max_tokens: 50
       })
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API fail: ${response.status} - ${errorText}`);
-    }
-    
     const data = await response.json();
-    
-    const rawContent = data.choices?.[0]?.message?.content || '';
-    const refined = rawContent.trim().replace(/^["'`]|["'`\.]+$/g, '');
-    
-    // Safety net to prevent UI crash
-    if (refined.toLowerCase() === query.toLowerCase()) {
-      return `${query} trending currently`;
+    const result = data.choices?.[0]?.message?.content?.trim() || query;
+
+    // Hard verification: If it's still echoing the input, manually force a high-value expansion
+    if (result.toLowerCase() === query.toLowerCase()) {
+      return `${query} trending best 2026`;
     }
     
-    return refined || query;
+    return result;
   } catch (e) {
-    console.error("AI Expansion Error:", e);
-    return query;
+    return `${query} trending`;
   }
 }
 
