@@ -6,9 +6,12 @@ import { VideoCard } from './VideoCard';
 import { useVideoContext } from '../context/VideoContext';
 import { useTheme } from '../context/ThemeContext';
 import { expandQuery } from '../services/aiQueryExpander';
+import { processVideoResults } from '../services/rankingEngine';
 
 interface SearchState {
   query: string;
+  activeSeed: string;
+  activeTarget: string;
   videos: ExtractedVideo[];
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -22,6 +25,8 @@ export default function NicheSearch(): React.ReactElement {
   const { isDark } = useTheme();
   const [state, setState] = useState<SearchState>({
     query: '',
+    activeSeed: '',
+    activeTarget: '',
     videos: [],
     isLoading: false,
     isLoadingMore: false,
@@ -33,7 +38,7 @@ export default function NicheSearch(): React.ReactElement {
   const loadMoreCountRef = useRef<number>(0);
 
   const performSearch = useCallback(
-    async (query: string, continuation: string | null = null): Promise<void> => {
+    async (seedQuery: string, searchTarget: string, continuation: string | null = null): Promise<void> => {
       const isInitialSearch = !continuation;
 
       setState(prev => ({
@@ -43,7 +48,7 @@ export default function NicheSearch(): React.ReactElement {
       }));
 
       try {
-        const result = await searchYouTubeVideos(query, continuation);
+        const result = await searchYouTubeVideos(searchTarget, continuation);
         const parsedVideos = result.videos;
 
         if (parsedVideos.length === 0 && isInitialSearch) {
@@ -51,7 +56,7 @@ export default function NicheSearch(): React.ReactElement {
             ...prev,
             isLoading: false,
             hasSearched: true,
-            error: 'No videos found. Try a different search term.',
+            error: 'No highly relevant videos passed the filtering matrix. Try a different seed.',
             videos: [],
           }));
           setSearchedVideos([]);
@@ -59,18 +64,22 @@ export default function NicheSearch(): React.ReactElement {
         }
 
         setState(prev => {
-          const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
+          const totalRawVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
           
-          setTimeout(() => setSearchedVideos(totalVideos), 0);
+          // Apply the SEO Matrix Scoring to rank and deduplicate
+          const finalRankedVideos = processVideoResults(seedQuery, [searchTarget], [totalRawVideos]);
+
+          setTimeout(() => setSearchedVideos(finalRankedVideos), 0);
 
           return {
             ...prev,
-            videos: totalVideos,
+            videos: finalRankedVideos,
             continuation: result.continuation,
             isLoading: false,
             isLoadingMore: false,
             hasSearched: true,
-            query: query,
+            activeSeed: seedQuery,
+            activeTarget: searchTarget,
           };
         });
       } catch (err) {
@@ -92,29 +101,31 @@ export default function NicheSearch(): React.ReactElement {
     const trimmedQuery = state.query.trim();
     if (!trimmedQuery) return;
 
-    setState(prev => ({ ...prev, isLoading: true }));
+    setState(prev => ({ ...prev, isLoading: true, error: null, hasSearched: true, videos: [], continuation: null }));
+    setSearchedVideos([]);
     loadMoreCountRef.current = 0;
     
     try {
+      console.log(`Expanding seed keyword: "${trimmedQuery}"...`);
       const expandedQuery = await expandQuery(trimmedQuery);
-      // Fix: Ensure we actually perform the search with the result, even if it matches the original
-      console.log("Original Search:", trimmedQuery, "| Final Search:", expandedQuery);
-      performSearch(expandedQuery, null);
+      console.log("AI Target Acquired:", expandedQuery);
+      
+      await performSearch(trimmedQuery, expandedQuery, null);
     } catch (err) {
       console.error("Expansion failed, falling back:", err);
-      performSearch(trimmedQuery, null);
+      await performSearch(trimmedQuery, trimmedQuery, null);
     }
-  }, [state.query, performSearch]);
+  }, [state.query, performSearch, setSearchedVideos]);
 
   const handleLoadMore = useCallback((): void => {
-    if (state.isLoadingMore || !state.continuation || state.isLoading || loadMoreCountRef.current > 0) {
+    if (state.isLoadingMore || !state.continuation || state.isLoading || loadMoreCountRef.current > 0 || !state.activeTarget) {
       return;
     }
 
     loadMoreCountRef.current += 1;
 
-    performSearch(state.query, state.continuation);
-  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, performSearch]);
+    performSearch(state.activeSeed, state.activeTarget, state.continuation);
+  }, [state.isLoadingMore, state.continuation, state.isLoading, state.activeSeed, state.activeTarget, performSearch]);
 
   const sentinelRef = useInfiniteScroll(handleLoadMore, {
     threshold: 0.1,
