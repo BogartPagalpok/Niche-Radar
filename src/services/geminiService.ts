@@ -174,7 +174,7 @@ export async function generateThumbnailPrompt(video: ExtractedVideo): Promise<Ge
     };
   }
 
-  const userPrompt = `You are an expert YouTube thumbnail designer and AI image prompt engineer. Analyze this video's thumbnail strategy, then create 3 ORIGINAL Midjourney prompts for NEW thumbnails that would achieve similar or better CTR.
+  const userPrompt = `You are an expert YouTube thumbnail designer and AI image prompt engineer. Analyze this video's title and description, then create 3 ORIGINAL Midjourney prompts for NEW thumbnails that are HIGHLY RELEVANT to the video's specific subject matter.
 
 VIDEO DATA:
 Title: ${video.title}
@@ -182,29 +182,35 @@ Channel: ${video.channel_name}
 Views: ${video.view_count}
 Description: ${video.description}
 
-OUTPUT 3 ORIGINAL THUMBNAIL CONCEPTS:
+CRITICAL RULES:
+1. NO GENERIC GAMER FACES OR CLICHÉ REACTIONS. The main subject MUST be a specific character, item, or environment directly related to the video's actual topic.
+2. YOU MUST INCLUDE TYPOGRAPHY. Put the exact text in quotes (e.g., "TEXT HERE") and describe the font style (e.g., bold glowing neon font).
 
-THUMBNAIL CONCEPT 1 - FACIAL REACTION / EMOTION
-Style: Close-up expressive face, strong emotion (shock, excitement, fear, amazement)
-Midjourney prompt: [write the complete prompt]
+OUTPUT 3 ORIGINAL THUMBNAIL CONCEPTS USING EXACTLY THIS FORMAT:
+
+THUMBNAIL CONCEPT 1 - [Insert Concept Strategy here, e.g. Emotional, Comparison, Mystery]
+Main Subject: [Strictly context-relevant subject. No generic humans]
+Typography Text: ["Short punchy phrase in quotes"]
+Typography Style: [Description of the font]
+Midjourney prompt: [Main Subject description], [Background description], typography [Typography Text] in [Typography Style] --ar 16:9 --style raw --v 6.1
 Why this works for CTR: [2 sentences]
-Best for: [what type of viewer this attracts]
+Best for: [type of viewer]
 
-THUMBNAIL CONCEPT 2 - COMPARISON / BEFORE-AFTER
-Style: Split screen or side-by-side showing contrast
-Midjourney prompt: [write the complete prompt]
+THUMBNAIL CONCEPT 2 - [Insert Concept Strategy here]
+Main Subject: [Strictly context-relevant subject. No generic humans]
+Typography Text: ["Short punchy phrase in quotes"]
+Typography Style: [Description of the font]
+Midjourney prompt: [Main Subject description], [Background description], typography [Typography Text] in [Typography Style] --ar 16:9 --style raw --v 6.1
 Why this works for CTR: [2 sentences]
-Best for: [what type of viewer this attracts]
+Best for: [type of viewer]
 
-THUMBNAIL CONCEPT 3 - CURIOSITY GAP / MYSTERY
-Style: Something partially hidden, unusual, or unexplained that makes you need to click
-Midjourney prompt: [write the complete prompt]
+THUMBNAIL CONCEPT 3 - [Insert Concept Strategy here]
+Main Subject: [Strictly context-relevant subject. No generic humans]
+Typography Text: ["Short punchy phrase in quotes"]
+Typography Style: [Description of the font]
+Midjourney prompt: [Main Subject description], [Background description], typography [Typography Text] in [Typography Style] --ar 16:9 --style raw --v 6.1
 Why this works for CTR: [2 sentences]
-Best for: [what type of viewer this attracts]
-
-Include in every Midjourney prompt: --ar 16:9 --style raw --v 6.1
-
-Make prompts specific. Include: subject description, expression, lighting, colors, background, camera angle, mood. Do not include text in the image prompts — text overlays are added in post-production.`;
+Best for: [type of viewer]`;
 
   try {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
