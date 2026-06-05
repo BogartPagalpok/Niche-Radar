@@ -22,6 +22,9 @@ export interface AnalyticsError {
   message: string;
 }
 
+// Helper to format dates
+const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
 async function makeYouTubeAnalyticsRequest(
   endpoint: string,
   params: Record<string, string>
@@ -29,33 +32,21 @@ async function makeYouTubeAnalyticsRequest(
   let { googleToken } = getCredentials();
 
   if (!googleToken) {
-    throw {
-      code: 'MISSING_TOKEN',
-      message: 'Google token not configured',
-    } as AnalyticsError;
+    throw { code: 'MISSING_TOKEN', message: 'Google token not configured' } as AnalyticsError;
   }
 
-  // Logic to execute the fetch, used for initial attempt and retry
   const executeFetch = async (token: string) => {
     const url = new URL(endpoint);
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
-
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
     return await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     });
   };
 
   try {
     let response = await executeFetch(googleToken);
 
-    // FIX: If unauthorized, attempt one refresh
     if (response.status === 401) {
-      console.warn("Token expired, attempting refresh...");
       const newCredentials = await refreshGoogleToken();
       if (newCredentials?.googleToken) {
         googleToken = newCredentials.googleToken;
@@ -70,16 +61,9 @@ async function makeYouTubeAnalyticsRequest(
         message: error.error?.message || `API request failed: ${response.status}`,
       } as AnalyticsError;
     }
-
     return await response.json();
   } catch (error: any) {
-    if (error.code && error.message) {
-      throw error;
-    }
-    throw {
-      code: 'NETWORK_ERROR',
-      message: error.message || 'Failed to reach YouTube API',
-    } as AnalyticsError;
+    throw error.code ? error : { code: 'NETWORK_ERROR', message: error.message };
   }
 }
 
@@ -88,119 +72,94 @@ export async function getVideoMetrics(videoId: string): Promise<VideoMetrics | n
     const { channelId } = getCredentials();
     if (!channelId) return null;
 
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+
+    // FIX: Removed estimatedRevenue (not allowed for video filters) and added dates
     const response = await makeYouTubeAnalyticsRequest(
       'https://youtubeanalytics.googleapis.com/v2/reports',
       {
         ids: `channel==${channelId}`,
-        metrics: 'views,estimatedRevenue,averageViewDuration,engagementRate',
+        metrics: 'views,averageViewDuration,engagementRate,cardClickThroughRate',
         filters: `video==${videoId}`,
+        startDate: formatDate(start),
+        endDate: formatDate(end),
         dimensions: 'day',
         sort: '-day',
         maxResults: '1',
       }
     );
 
-    if (!response.rows || response.rows.length === 0) {
-      return null;
-    }
+    if (!response.rows || response.rows.length === 0) return null;
 
     const row = response.rows[0];
-    const columnHeaders = response.columnHeaders;
-
-    const getValueByHeader = (headerName: string) => {
-      const index = columnHeaders.findIndex((h: any) => h.name === headerName);
-      return index >= 0 ? row[index] : 0;
+    const headers = response.columnHeaders;
+    const getVal = (name: string) => {
+      const idx = headers.findIndex((h: any) => h.name === name);
+      return idx >= 0 ? row[idx] : 0;
     };
 
     return {
       videoId,
-      views: getValueByHeader('views') || 0,
-      estimatedRevenue: getValueByHeader('estimatedRevenue') || 0,
-      ctr: getValueByHeader('cardClickThroughRate') || 0,
-      avgViewDuration: getValueByHeader('averageViewDuration') || 0,
-      engagementRate: getValueByHeader('engagementRate') || 0,
-      date: response.rows[0]?.[0] || new Date().toISOString().split('T')[0],
+      views: getVal('views') || 0,
+      estimatedRevenue: 0, // Not available at video level
+      ctr: getVal('cardClickThroughRate') || 0,
+      avgViewDuration: getVal('averageViewDuration') || 0,
+      engagementRate: getVal('engagementRate') || 0,
+      date: row[0] || formatDate(new Date()),
     };
-  } catch (error: any) {
-    console.error('Failed to get video metrics:', error);
+  } catch (e) {
+    console.error('Failed to get video metrics:', e);
     return null;
   }
 }
 
 export async function getChannelStats(): Promise<ChannelStats | null> {
   try {
-    const { googleToken, channelId } = getCredentials();
-    if (!googleToken || !channelId) return null;
+    const { youtubeApiKey, channelId } = getCredentials();
+    if (!youtubeApiKey || !channelId) return null;
 
+    // FIX: Use YouTube API Key for public stats
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${googleToken}`,
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-      }
+      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${youtubeApiKey}`
     );
 
-    if (!response.ok) {
-      console.error('Failed to fetch channel stats:', response.status);
-      return null;
-    }
-
     const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      return null;
-    }
-
-    const stats = data.items[0].statistics;
-
-    return {
+    const stats = data.items?.[0]?.statistics;
+    return stats ? {
       channelId,
-      subscriberCount: parseInt(stats.subscriberCount || 0, 10),
-      viewCount: parseInt(stats.viewCount || 0, 10),
-      videoCount: parseInt(stats.videoCount || 0, 10),
-    };
-  } catch (error: any) {
-    console.error('Failed to get channel stats:', error);
+      subscriberCount: parseInt(stats.subscriberCount, 10),
+      viewCount: parseInt(stats.viewCount, 10),
+      videoCount: parseInt(stats.videoCount, 10),
+    } : null;
+  } catch (e) {
     return null;
   }
 }
 
 export async function getVideoStats(videoIds: string[]): Promise<Record<string, any>> {
   try {
-    const { googleToken } = getCredentials();
-    if (!googleToken) return {};
+    const { youtubeApiKey } = getCredentials();
+    if (!youtubeApiKey) return {};
 
+    // FIX: Use YouTube API Key for public stats
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${videoIds.join(',')}&key=${googleToken}`,
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-      }
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${videoIds.join(',')}&key=${youtubeApiKey}`
     );
-
-    if (!response.ok) {
-      return {};
-    }
 
     const data = await response.json();
     const result: Record<string, any> = {};
-
-    if (data.items) {
-      data.items.forEach((item: any) => {
-        result[item.id] = {
-          viewCount: parseInt(item.statistics?.viewCount || 0, 10),
-          likeCount: parseInt(item.statistics?.likeCount || 0, 10),
-          commentCount: parseInt(item.statistics?.commentCount || 0, 10),
-          duration: item.contentDetails?.duration || 'PT0S',
-        };
-      });
-    }
-
+    data.items?.forEach((item: any) => {
+      result[item.id] = {
+        viewCount: parseInt(item.statistics?.viewCount || 0, 10),
+        likeCount: parseInt(item.statistics?.likeCount || 0, 10),
+        commentCount: parseInt(item.statistics?.commentCount || 0, 10),
+        duration: item.contentDetails?.duration || 'PT0S',
+      };
+    });
     return result;
-  } catch (error: any) {
-    console.error('Failed to get video stats:', error);
+  } catch (e) {
     return {};
   }
 }
