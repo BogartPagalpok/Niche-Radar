@@ -1,4 +1,4 @@
-import { hasRequiredCredentials, getCredentials } from './credentialsService';
+import { hasRequiredCredentials, getCredentials, refreshGoogleToken } from './credentialsService';
 
 export interface YouTubeMetrics {
   views: number;
@@ -14,7 +14,7 @@ export interface MetricsError {
 }
 
 export async function fetchYouTubeMetrics(videoId: string): Promise<YouTubeMetrics | MetricsError> {
-  const { googleToken, channelId } = getCredentials();
+  let { googleToken, channelId } = getCredentials();
 
   if (!googleToken || !channelId) {
     return {
@@ -23,31 +23,64 @@ export async function fetchYouTubeMetrics(videoId: string): Promise<YouTubeMetri
     };
   }
 
+  // Helper inside the request block to execute with a specific token string
+  const executeQuery = async (token: string) => {
+    // 1. Calculate historical fallback dates required by the API
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30); // Grab last 30 days of data
+
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    const startDateStr = formatDate(start);
+    const endDateStr = formatDate(end);
+
+    // 2. FIXED QUERY STRING: Added required dates, removed revenue components restricted by video filters
+    const url = `https://youtubeanalytics.googleapis.com/v2/reports` +
+      `?ids=channel==${channelId}` +
+      `&metrics=views,cardClickThroughRate` + 
+      `&filters=video==${videoId}` +
+      `&dimensions=day` +
+      `&sort=-day` +
+      `&startDate=${startDateStr}` +
+      `&endDate=${endDateStr}` +
+      `&maxResults=1`;
+
+    return await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+  };
+
   try {
-    const response = await fetch(
-      `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==${channelId}&metrics=views,estimatedRevenue,cpm,cardClickThroughRate&filters=video==${videoId}&dimensions=day&sort=-day&maxResults=1`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${googleToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+    let response = await executeQuery(googleToken);
+
+    // 3. AUTOMATED 401 RETRY: Hook directly into your background refresh utility
+    if (response.status === 401) {
+      console.warn('Access token expired during metrics fetch. Attempting silent refresh...');
+      const refreshResult = await refreshGoogleToken();
+      
+      if (refreshResult.googleToken) {
+        // Re-run the request sequence using the updated token string
+        response = await executeQuery(refreshResult.googleToken);
       }
-    );
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
         return {
           code: 'INVALID_TOKEN',
-          message: 'Google token is invalid or expired. Please update in App Settings.',
+          message: 'Google session has fully expired. Please re-authenticate inside App Settings.',
         };
       }
 
       if (response.status === 403) {
         return {
           code: 'INSUFFICIENT_PERMISSIONS',
-          message: 'Your YouTube Analytics API access may be restricted. Check your Google Cloud project permissions.',
+          message: 'Your YouTube Analytics API access may be restricted or lacks permissions for this video.',
         };
       }
 
@@ -62,22 +95,20 @@ export async function fetchYouTubeMetrics(videoId: string): Promise<YouTubeMetri
     if (!data.rows || data.rows.length === 0) {
       return {
         code: 'NO_DATA',
-        message: 'No analytics data available for this video. It may be too new or not monetized.',
+        message: 'No analytics data available for this video inside this date range.',
       };
     }
 
     const row = data.rows[0];
-    const columnHeaders = data.columnHeaders || [];
 
-    const getValueByIndex = (index: number) => {
-      return row[index] ?? 0;
-    };
-
-    const views = getValueByIndex(0) || 0;
-    const estimatedRevenue = getValueByIndex(1) || 0;
-    const cpm = getValueByIndex(2) || 0;
-    const cardClickThroughRate = getValueByIndex(3) || 0;
-    const netRpm = views > 0 ? (estimatedRevenue / views) * 1000 : 0;
+    // Array position mapping based on our updated clean metric parameters string
+    const views = row[0] ?? 0;
+    const cardClickThroughRate = row[1] ?? 0;
+    
+    // Revenue models set to safe defaults since they are restricted for specific video endpoint queries
+    const estimatedRevenue = 0;
+    const cpm = 0;
+    const netRpm = 0;
 
     return {
       views,
