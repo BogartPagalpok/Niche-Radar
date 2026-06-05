@@ -1,3 +1,5 @@
+import { identifyRelevantTopic } from './aiQueryExpander';
+
 export interface ExtractedVideo {
   video_id: string;
   title: string;
@@ -291,10 +293,14 @@ async function fetchWithProxy(url: string): Promise<string> {
 
 export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
   try {
+    // STEP 1: AI Niche Interpretation
+    const refinedQuery = continuation ? query : await identifyRelevantTopic(query);
+    console.log(`[Workflow] Raw: "${query}" -> Interpreter: "${refinedQuery}"`);
+
     let htmlContent: string;
 
     if (!continuation) {
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%3D%3D`;
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(refinedQuery)}&sp=EgIQAQ%3D%3D`;
 
       htmlContent = await fetchWithProxy(searchUrl);
 
