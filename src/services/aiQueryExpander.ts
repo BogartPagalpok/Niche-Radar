@@ -32,7 +32,7 @@ export async function identifyRelevantTopic(query: string): Promise<string> {
           },
           { role: 'user', content: query }
         ],
-        temperature: 0.2,
+        temperature: 0.5,
         max_tokens: 40
       })
     });
@@ -44,9 +44,12 @@ export async function identifyRelevantTopic(query: string): Promise<string> {
     
     const data = await response.json();
     
-    // FIX: Safely extract content to prevent the 'trim' undefined error
     const rawContent = data.choices?.[0]?.message?.content || '';
     const refined = rawContent.trim().replace(/^["'`]|["'`\.]+$/g, '');
+    
+    if (refined.toLowerCase() === query.toLowerCase()) {
+      return `${query} advanced tutorial`;
+    }
     
     return refined || query;
   } catch (e) {
