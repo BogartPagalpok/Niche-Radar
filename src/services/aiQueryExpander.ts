@@ -1,6 +1,13 @@
 import { STORAGE_KEY_CEREBRAS } from './credentialsService';
 
-async function tryModel(model: string, query: string, key: string, retries = 2): Promise<string | null> {
+const MODELS = [
+  'llama3.1-8b',
+  'zai-glm-4.7',
+  'gpt-oss-120b',
+  'qwen-3-235b-a22b-instruct-2507',
+];
+
+async function tryModel(model: string, query: string, key: string, retries = 1): Promise<string | null> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
@@ -23,29 +30,24 @@ async function tryModel(model: string, query: string, key: string, retries = 2):
         }),
       });
 
-      // If rate limited, wait and retry
+      // Handle rate limiting
       if (res.status === 429) {
         const retryAfter = res.headers.get('retry-after');
-        const delay = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 2000;
-        await new Promise(r => setTimeout(r, delay));
+        const waitMs = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 2000;
+        await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
 
-      // If not OK, skip retries
-      if (!res.ok) break;
+      if (!res.ok) break;  // other errors – skip this model
 
       const data = await res.json();
       const expanded = data.choices?.[0]?.message?.content?.trim();
       if (expanded && expanded.toLowerCase() !== query.toLowerCase()) {
         return expanded;
       }
-      // Empty or echoed – no point retrying this model
-      break;
+      break;  // empty/echoed – no point retrying same model
     } catch {
-      // Network error – retry
-      if (attempt < retries) {
-        await new Promise(r => setTimeout(r, 2000));
-      }
+      if (attempt < retries) await new Promise(r => setTimeout(r, 2000));
     }
   }
   return null;
@@ -53,17 +55,14 @@ async function tryModel(model: string, query: string, key: string, retries = 2):
 
 export async function expandQuery(query: string): Promise<string> {
   const key = localStorage.getItem(STORAGE_KEY_CEREBRAS);
-  if (!key) return query;   // no key → raw query
+  if (!key) return query;
 
-  // 1. Primary model
-  let result = await tryModel('gpt-oss-120b', query, key);
-  if (result) return result;
+  for (const model of MODELS) {
+    const result = await tryModel(model, query, key);
+    if (result) return result;
+  }
 
-  // 2. Fallback model
-  result = await tryModel('zai-glm-4.7', query, key);
-  if (result) return result;
-
-  // 3. Both models unavailable → raw query (never a template)
+  // Every model failed or echoed – honest raw query (YouTube is good at raw queries)
   return query;
 }
 
