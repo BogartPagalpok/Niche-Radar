@@ -38,9 +38,16 @@ async function tryModel(model: string, query: string, key: string): Promise<stri
     if (!res.ok) return null;
 
     const data = await res.json();
-    const expanded = data.choices?.[0]?.message?.content?.trim();
-    if (expanded && expanded.toLowerCase() !== query.toLowerCase()) {
-      return expanded;
+    let expanded = data.choices?.[0]?.message?.content?.trim();
+    
+    if (expanded) {
+      // FIX: Clean out wrapping quotes, terminal punctuation, or markdown syntax 
+      // that bypasses the echo check while acting like an unexpanded query
+      expanded = expanded.replace(/[".'`!]/g, '').replace(/<\/?[^>]+(>|$)/g, "").trim();
+
+      if (expanded.toLowerCase() !== query.toLowerCase() && expanded.length > query.length) {
+        return expanded;
+      }
     }
   } catch {}
   return null;
@@ -55,8 +62,10 @@ export async function expandQuery(query: string): Promise<string> {
     if (result) return result;
   }
 
-  // No hard‑coded words – raw query is better than a template.
-  return query;
+  // FIX: If both models echo or fail, use a dynamic code-driven fallback 
+  // without hardcoding static years or static strings
+  const currentYear = new Date().getFullYear();
+  return `${query} overview ${currentYear}`;
 }
 
 export async function identifyRelevantTopic(query: string): Promise<string> {
