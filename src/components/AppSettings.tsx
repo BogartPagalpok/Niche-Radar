@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { KeyRound, Cpu, Eye, EyeOff, Save, CheckCircle2, ShieldCheck, RefreshCw, Trash2, Youtube } from 'lucide-react';
+import { KeyRound, Cpu, Eye, EyeOff, Save, CheckCircle2, ShieldCheck, RefreshCw, Trash2, RefreshCcw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-
-// Storage keys – match those in credentials.ts
-const STORAGE_KEY_TOKEN = 'niche-radar-google-token';
-const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
-const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
-const STORAGE_KEY_YOUTUBE_API_KEY = 'niche-radar-youtube-api-key';
-const STORAGE_KEY_CLIENT_ID = 'niche-radar-client-id'; // NEW
-const STORAGE_KEY_CLIENT_SECRET = 'niche-radar-client-secret'; // NEW
+import {
+  STORAGE_KEY_REFRESH_TOKEN,
+  STORAGE_KEY_GEMINI,
+  STORAGE_KEY_CHANNEL_ID,
+  STORAGE_KEY_CLIENT_ID,
+  STORAGE_KEY_CLIENT_SECRET,
+  STORAGE_KEY_ACCESS_TOKEN,
+  STORAGE_KEY_TOKEN_EXPIRY,
+  getValidToken,
+} from '../services/credentialsService';
 
 interface CredentialFieldProps {
   id: string;
@@ -27,7 +29,7 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-1.5">
         <label
           htmlFor={id}
           style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}
@@ -42,7 +44,7 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
         )}
       </div>
 
-      <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginBottom: '8px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginBottom: '6px', lineHeight: 1.5 }}>
         {hint}
       </p>
 
@@ -87,8 +89,8 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
           style={{
             paddingLeft: '54px',
             paddingRight: '48px',
-            paddingTop: '13px',
-            paddingBottom: '13px',
+            paddingTop: '11px',
+            paddingBottom: '11px',
             fontSize: '0.82rem',
             fontFamily: value && !visible ? '"JetBrains Mono", monospace' : '"Inter", sans-serif',
             letterSpacing: value && !visible ? '0.08em' : '0',
@@ -122,101 +124,109 @@ function CredentialField({ id, label, hint, placeholder, icon: Icon, value, onCh
 }
 
 export default function AppSettings() {
-  const [googleToken, setGoogleToken] = useState('');
-  const [geminiKey, setGeminiKey] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  const [refreshToken, setRefreshToken] = useState('');
   const [channelId, setChannelId] = useState('');
-  const [youtubeApiKey, setYoutubeApiKey] = useState('');
-  const [clientId, setClientId] = useState(''); // NEW
-  const [clientSecret, setClientSecret] = useState(''); // NEW
-  
-  const [savedToken, setSavedToken] = useState(false);
-  const [savedGemini, setSavedGemini] = useState(false);
+  const [geminiKey, setGeminiKey] = useState('');
+
+  const [savedClientId, setSavedClientId] = useState(false);
+  const [savedClientSecret, setSavedClientSecret] = useState(false);
+  const [savedRefreshToken, setSavedRefreshToken] = useState(false);
   const [savedChannelId, setSavedChannelId] = useState(false);
-  const [savedYoutubeApiKey, setSavedYoutubeApiKey] = useState(false);
-  const [savedClientId, setSavedClientId] = useState(false); // NEW
-  const [savedClientSecret, setSavedClientSecret] = useState(false); // NEW
-  
+  const [savedGemini, setSavedGemini] = useState(false);
+
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
+  const [testMsg, setTestMsg] = useState('');
 
   useEffect(() => {
-    const t = localStorage.getItem(STORAGE_KEY_TOKEN) ?? '';
-    const g = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
-    const c = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
-    const y = localStorage.getItem(STORAGE_KEY_YOUTUBE_API_KEY) ?? '';
     const cid = localStorage.getItem(STORAGE_KEY_CLIENT_ID) ?? '';
     const cs = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET) ?? '';
-    
-    setGoogleToken(t);
-    setGeminiKey(g);
-    setChannelId(c);
-    setYoutubeApiKey(y);
+    const rt = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN) ?? '';
+    const ch = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
+    const gk = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
+
     setClientId(cid);
     setClientSecret(cs);
-    
-    setSavedToken(!!t);
-    setSavedGemini(!!g);
-    setSavedChannelId(!!c);
-    setSavedYoutubeApiKey(!!y);
+    setRefreshToken(rt);
+    setChannelId(ch);
+    setGeminiKey(gk);
+
     setSavedClientId(!!cid);
     setSavedClientSecret(!!cs);
+    setSavedRefreshToken(!!rt);
+    setSavedChannelId(!!ch);
+    setSavedGemini(!!gk);
   }, []);
 
   const handleSave = () => {
     setSaveStatus('saving');
-    localStorage.setItem(STORAGE_KEY_TOKEN, googleToken.trim());
-    localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
+
+    localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId.trim());
+    localStorage.setItem(STORAGE_KEY_CLIENT_SECRET, clientSecret.trim());
+    localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, refreshToken.trim());
     localStorage.setItem(STORAGE_KEY_CHANNEL_ID, channelId.trim());
-    localStorage.setItem(STORAGE_KEY_YOUTUBE_API_KEY, youtubeApiKey.trim());
-    localStorage.setItem(STORAGE_KEY_CLIENT_ID, clientId.trim()); // NEW
-    localStorage.setItem(STORAGE_KEY_CLIENT_SECRET, clientSecret.trim()); // NEW
-    
-    setSavedToken(!!googleToken.trim());
-    setSavedGemini(!!geminiKey.trim());
-    setSavedChannelId(!!channelId.trim());
-    setSavedYoutubeApiKey(!!youtubeApiKey.trim());
+    localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
+
+    // Clear cached access token so it gets refreshed on next use
+    localStorage.removeItem(STORAGE_KEY_ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEY_TOKEN_EXPIRY);
+
     setSavedClientId(!!clientId.trim());
     setSavedClientSecret(!!clientSecret.trim());
-    
+    setSavedRefreshToken(!!refreshToken.trim());
+    setSavedChannelId(!!channelId.trim());
+    setSavedGemini(!!geminiKey.trim());
+
     setTimeout(() => setSaveStatus('saved'), 350);
     setTimeout(() => setSaveStatus('idle'), 2200);
   };
 
   const handleClear = () => {
-    localStorage.removeItem(STORAGE_KEY_TOKEN);
-    localStorage.removeItem(STORAGE_KEY_GEMINI);
-    localStorage.removeItem(STORAGE_KEY_CHANNEL_ID);
-    localStorage.removeItem(STORAGE_KEY_YOUTUBE_API_KEY);
-    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-    localStorage.removeItem(STORAGE_KEY_CLIENT_SECRET);
-    
-    setGoogleToken('');
-    setGeminiKey('');
-    setChannelId('');
-    setYoutubeApiKey('');
-    setClientId('');
-    setClientSecret('');
-    
-    setSavedToken(false);
-    setSavedGemini(false);
-    setSavedChannelId(false);
-    setSavedYoutubeApiKey(false);
-    setSavedClientId(false);
-    setSavedClientSecret(false);
+    [STORAGE_KEY_CLIENT_ID, STORAGE_KEY_CLIENT_SECRET, STORAGE_KEY_REFRESH_TOKEN,
+      STORAGE_KEY_CHANNEL_ID, STORAGE_KEY_GEMINI, STORAGE_KEY_ACCESS_TOKEN, STORAGE_KEY_TOKEN_EXPIRY]
+      .forEach(k => localStorage.removeItem(k));
+
+    setClientId(''); setClientSecret(''); setRefreshToken(''); setChannelId(''); setGeminiKey('');
+    setSavedClientId(false); setSavedClientSecret(false); setSavedRefreshToken(false);
+    setSavedChannelId(false); setSavedGemini(false);
+    setTestStatus('idle');
   };
 
-  const anyFilled = googleToken.trim() || geminiKey.trim() || channelId.trim() || youtubeApiKey.trim() || clientId.trim() || clientSecret.trim();
+  const handleTestConnection = async () => {
+    setTestStatus('testing');
+    setTestMsg('');
+    try {
+      const token = await getValidToken();
+      if (token) {
+        setTestStatus('ok');
+        setTestMsg('Token retrieved successfully. API connection is active.');
+      } else {
+        setTestStatus('fail');
+        setTestMsg('Could not obtain a valid token. Check Client ID, Secret, and Refresh Token.');
+      }
+    } catch {
+      setTestStatus('fail');
+      setTestMsg('Connection test failed. Check your credentials.');
+    }
+    setTimeout(() => setTestStatus('idle'), 5000);
+  };
+
+  const anyFilled = clientId || clientSecret || refreshToken || channelId || geminiKey;
 
   return (
-    <div className="animate-slide-up space-y-5">
+    <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
         <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
           App Settings
         </h2>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Configure your API credentials. All keys are stored locally in your browser and never transmitted to any server.
+          Configure credentials once — the app handles token refresh automatically.
         </p>
       </div>
 
+      {/* Security notice */}
       <div
         style={{
           display: 'flex',
@@ -225,56 +235,40 @@ export default function AppSettings() {
           background: 'linear-gradient(135deg, rgba(34,199,138,0.08), rgba(34,199,138,0.04))',
           border: '1px solid rgba(34,199,138,0.2)',
           borderRadius: 'var(--radius-sm)',
-          padding: '12px 14px',
-          boxShadow: 'var(--shadow-clay-sm)',
+          padding: '10px 14px',
         }}
       >
-        <ShieldCheck size={15} strokeWidth={2.5} color="var(--mint-text)" style={{ flexShrink: 0, marginTop: '1px' }} />
-        <p style={{ fontSize: '0.73rem', color: 'var(--mint-text)', lineHeight: 1.6, fontWeight: 500 }}>
-          Keys are stored exclusively in <strong>localStorage</strong> on your device. No data leaves your browser.
-          Clear your browser data to remove stored credentials.
+        <ShieldCheck size={14} strokeWidth={2.5} color="var(--mint-text)" style={{ flexShrink: 0, marginTop: '1px' }} />
+        <p style={{ fontSize: '0.72rem', color: 'var(--mint-text)', lineHeight: 1.6, fontWeight: 500 }}>
+          All keys are stored in <strong>localStorage</strong> only — nothing leaves your browser.
+          Access tokens refresh automatically using your Refresh Token.
         </p>
       </div>
 
+      {/* Credential fields */}
       <div
         style={{
           background: 'var(--bg-panel)',
           borderRadius: 'var(--radius-lg)',
           boxShadow: 'var(--shadow-clay-lg)',
           border: '1px solid var(--border-subtle)',
-          padding: '24px',
+          padding: '20px',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
+            position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-            borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
           }}
         />
 
-        <div className="space-y-6">
-          <CredentialField
-            id="google-token"
-            label="Google Client Access Token"
-            hint="Required for authenticated YouTube Data API v3 requests."
-            placeholder="ya29.A0A···"
-            icon={KeyRound}
-            value={googleToken}
-            onChange={setGoogleToken}
-            saved={savedToken}
-          />
-          <div className="clay-divider" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <CredentialField
             id="client-id"
             label="Google Client ID"
-            hint="Required for automatic token refreshing."
+            hint="From Google Cloud Console → OAuth 2.0 Client IDs."
             placeholder="your-id.apps.googleusercontent.com"
             icon={KeyRound}
             value={clientId}
@@ -285,7 +279,7 @@ export default function AppSettings() {
           <CredentialField
             id="client-secret"
             label="Google Client Secret"
-            hint="Required for automatic token refreshing."
+            hint="Paired with the Client ID above."
             placeholder="GOCSPX-..."
             icon={KeyRound}
             value={clientSecret}
@@ -294,20 +288,20 @@ export default function AppSettings() {
           />
           <div className="clay-divider" />
           <CredentialField
-            id="youtube-api-key"
-            label="YouTube Data API Key (optional)"
-            hint="Simple API key for public channel stats."
-            placeholder="AIzaSy···"
-            icon={Youtube}
-            value={youtubeApiKey}
-            onChange={setYoutubeApiKey}
-            saved={savedYoutubeApiKey}
+            id="refresh-token"
+            label="Google Refresh Token"
+            hint="Long-lived token used to auto-generate Access Tokens. Obtain via the Sign-in flow."
+            placeholder="1//0g..."
+            icon={RefreshCcw}
+            value={refreshToken}
+            onChange={setRefreshToken}
+            saved={savedRefreshToken}
           />
           <div className="clay-divider" />
           <CredentialField
             id="channel-id"
             label="YouTube Channel ID"
-            hint="Required for analytics."
+            hint="Your channel ID for analytics. Starts with UC…"
             placeholder="UCxxx···"
             icon={KeyRound}
             value={channelId}
@@ -318,7 +312,7 @@ export default function AppSettings() {
           <CredentialField
             id="gemini-key"
             label="Gemini API Key"
-            hint="Powers AI-based niche analysis."
+            hint="Powers AI script & thumbnail prompt generation via Google AI Studio."
             placeholder="AIzaSy···"
             icon={Cpu}
             value={geminiKey}
@@ -328,6 +322,7 @@ export default function AppSettings() {
         </div>
       </div>
 
+      {/* Action buttons */}
       <div className="flex items-center gap-3">
         <button
           onClick={handleSave}
@@ -358,23 +353,55 @@ export default function AppSettings() {
         )}
       </div>
 
+      {/* Test connection */}
+      <button
+        onClick={handleTestConnection}
+        disabled={testStatus === 'testing'}
+        className="clay-btn-secondary flex items-center justify-center gap-2 px-4 py-2.5 w-full"
+        style={{ fontSize: '0.8rem' }}
+      >
+        {testStatus === 'testing' ? (
+          <RefreshCw size={13} strokeWidth={2.5} style={{ animation: 'spin 0.6s linear infinite' }} />
+        ) : (
+          <RefreshCcw size={13} strokeWidth={2.5} />
+        )}
+        {testStatus === 'testing' ? 'Testing…' : 'Test Token / Force Refresh'}
+      </button>
+
+      {testMsg && (
+        <div
+          style={{
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-sm)',
+            background: testStatus === 'ok' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+            border: `1px solid ${testStatus === 'ok' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+            fontSize: '0.75rem',
+            color: testStatus === 'ok' ? '#15803D' : '#991B1B',
+            lineHeight: 1.5,
+          }}
+        >
+          {testMsg}
+        </div>
+      )}
+
+      {/* Status indicators */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedToken ? '#22C55E' : 'var(--border-strong)', boxShadow: savedToken ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
-          <span>Google Token: {savedToken ? 'Set' : 'Not Set'}</span>
-        </div>
-        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedYoutubeApiKey ? '#22C55E' : 'var(--border-strong)', boxShadow: savedYoutubeApiKey ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
-          <span>YouTube API Key: {savedYoutubeApiKey ? 'Set' : 'Not Set'}</span>
-        </div>
-        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedChannelId ? '#22C55E' : 'var(--border-strong)', boxShadow: savedChannelId ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
-          <span>Channel ID: {savedChannelId ? 'Set' : 'Not Set'}</span>
-        </div>
-        <div className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: savedGemini ? '#22C55E' : 'var(--border-strong)', boxShadow: savedGemini ? '0 0 5px rgba(34,197,94,0.5)' : 'none' }} />
-          <span>Gemini Key: {savedGemini ? 'Set' : 'Not Set'}</span>
-        </div>
+        {[
+          { label: 'Client ID', stored: savedClientId },
+          { label: 'Client Secret', stored: savedClientSecret },
+          { label: 'Refresh Token', stored: savedRefreshToken },
+          { label: 'Channel ID', stored: savedChannelId },
+          { label: 'Gemini Key', stored: savedGemini },
+        ].map(({ label, stored }) => (
+          <div key={label} className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{
+              width: '6px', height: '6px', borderRadius: '50%',
+              background: stored ? '#22C55E' : 'var(--border-strong)',
+              boxShadow: stored ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
+            }} />
+            <span>{label}: {stored ? 'Set' : 'Not Set'}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+import { getValidToken } from './credentialsService';
+
 export interface ChannelStats {
   subscribers: string;
   totalViews: string;
@@ -8,24 +10,36 @@ export interface ChannelStats {
   error?: string;
 }
 
-function getStoredYouTubeKey(): string | null {
-  return localStorage.getItem('niche-radar-youtube-key');
-}
-
 export async function fetchChannelStats(channelId: string): Promise<ChannelStats> {
-  const apiKey = getStoredYouTubeKey();
+  const token = await getValidToken();
 
-  if (!apiKey) {
+  if (!token) {
     return {
       subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A',
       channelTitle: 'N/A', thumbnail: '', country: 'N/A',
-      error: 'YouTube API key not configured',
+      error: 'Google token not available. Check credentials in App Settings.',
     };
   }
 
   try {
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
-    const response = await fetch(url);
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (response.status === 401) {
+      localStorage.removeItem('niche-radar-token-expiry');
+      const fresh = await getValidToken();
+      if (!fresh) {
+        return {
+          subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A',
+          channelTitle: 'N/A', thumbnail: '', country: 'N/A',
+          error: 'Authentication expired. Could not refresh token.',
+        };
+      }
+      return fetchChannelStats(channelId); // retry with fresh token
+    }
+
     const data = await response.json();
 
     if (!data.items || data.items.length === 0) {

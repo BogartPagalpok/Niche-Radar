@@ -1,46 +1,59 @@
-// Storage keys
-export const STORAGE_KEY_TOKEN = 'niche-radar-google-token';
+export const STORAGE_KEY_ACCESS_TOKEN = 'niche-radar-google-token';
 export const STORAGE_KEY_REFRESH_TOKEN = 'niche-radar-refresh-token';
+export const STORAGE_KEY_TOKEN_EXPIRY = 'niche-radar-token-expiry';
 export const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
 export const STORAGE_KEY_CHANNEL_ID = 'niche-radar-channel-id';
-export const STORAGE_KEY_YOUTUBE_API_KEY = 'niche-radar-youtube-api-key';
-export const STORAGE_KEY_CLIENT_ID = 'niche-radar-client-id'; // NEW
-export const STORAGE_KEY_CLIENT_SECRET = 'niche-radar-client-secret'; // NEW
+export const STORAGE_KEY_CLIENT_ID = 'niche-radar-client-id';
+export const STORAGE_KEY_CLIENT_SECRET = 'niche-radar-client-secret';
+
+// Legacy alias so old imports keep compiling
+export const STORAGE_KEY_TOKEN = STORAGE_KEY_ACCESS_TOKEN;
 
 export interface Credentials {
-  googleToken: string | null;
+  googleToken: string | null;   // alias for accessToken
+  accessToken: string | null;
   refreshToken: string | null;
   geminiKey: string | null;
   channelId: string | null;
-  youtubeApiKey: string | null;
+  clientId: string | null;
+  clientSecret: string | null;
+  youtubeApiKey: null;          // removed – kept for type compat
 }
 
 export function getCredentials(): Credentials {
+  const accessToken = localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
   return {
-    googleToken: localStorage.getItem(STORAGE_KEY_TOKEN),
+    accessToken,
+    googleToken: accessToken,
     refreshToken: localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN),
     geminiKey: localStorage.getItem(STORAGE_KEY_GEMINI),
     channelId: localStorage.getItem(STORAGE_KEY_CHANNEL_ID),
-    youtubeApiKey: localStorage.getItem(STORAGE_KEY_YOUTUBE_API_KEY),
+    clientId: localStorage.getItem(STORAGE_KEY_CLIENT_ID),
+    clientSecret: localStorage.getItem(STORAGE_KEY_CLIENT_SECRET),
+    youtubeApiKey: null,
   };
 }
 
-export function saveCredentials(token: string, refreshToken?: string) {
-  localStorage.setItem(STORAGE_KEY_TOKEN, token);
-  if (refreshToken) {
-    localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, refreshToken);
-  }
+function isTokenExpired(): boolean {
+  const expiry = localStorage.getItem(STORAGE_KEY_TOKEN_EXPIRY);
+  if (!expiry) return true;
+  return Date.now() > parseInt(expiry, 10) - 60_000;
 }
 
-// FIXED: Now reads dynamic inputs from the new UI fields
-export async function refreshGoogleToken(): Promise<{ googleToken: string | null }> {
+function persistAccessToken(token: string, expiresInSeconds = 3600): void {
+  localStorage.setItem(STORAGE_KEY_ACCESS_TOKEN, token);
+  localStorage.setItem(STORAGE_KEY_TOKEN_EXPIRY, String(Date.now() + expiresInSeconds * 1000));
+}
+
+let refreshPromise: Promise<string | null> | null = null;
+
+async function doRefresh(): Promise<string | null> {
   const refreshToken = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN);
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
   const clientSecret = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET);
 
   if (!refreshToken || !clientId || !clientSecret) {
-    console.error('Missing credentials for auto-refresh. Please check Settings.');
-    return { googleToken: null };
+    return null;
   }
 
   try {
@@ -57,23 +70,55 @@ export async function refreshGoogleToken(): Promise<{ googleToken: string | null
 
     const data = await response.json();
     if (data.access_token) {
-      saveCredentials(data.access_token);
-      return { googleToken: data.access_token };
-    } else {
-      console.error('Refresh token response error:', data);
+      persistAccessToken(data.access_token, data.expires_in ?? 3600);
+      return data.access_token;
     }
+    console.error('Token refresh failed:', data);
+    return null;
   } catch (error) {
-    console.error('Failed to refresh token:', error);
+    console.error('Token refresh network error:', error);
+    return null;
   }
-  return { googleToken: null };
+}
+
+/**
+ * Returns a valid access token, automatically refreshing via Refresh Token if expired.
+ * Every API caller should use this instead of reading localStorage directly.
+ */
+export async function getValidToken(): Promise<string | null> {
+  const current = localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
+
+  if (current && !isTokenExpired()) {
+    return current;
+  }
+
+  // Deduplicate concurrent refresh calls
+  if (!refreshPromise) {
+    refreshPromise = doRefresh().finally(() => { refreshPromise = null; });
+  }
+
+  return refreshPromise;
+}
+
+/** Called after a successful Google OAuth flow to store all tokens. */
+export function saveCredentials(accessToken: string, refreshToken?: string, expiresIn?: number): void {
+  persistAccessToken(accessToken, expiresIn ?? 3600);
+  if (refreshToken) {
+    localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, refreshToken);
+  }
+}
+
+/** Legacy shim — some services still call this directly. */
+export async function refreshGoogleToken(): Promise<{ googleToken: string | null }> {
+  const token = await getValidToken();
+  return { googleToken: token };
 }
 
 export function hasRequiredCredentials(): boolean {
-  const { googleToken, channelId } = getCredentials();
-  return !!(googleToken && channelId);
+  const { accessToken, channelId } = getCredentials();
+  return !!(accessToken && channelId);
 }
 
 export function hasYouTubeApiKey(): boolean {
-  const { youtubeApiKey } = getCredentials();
-  return !!youtubeApiKey;
+  return false;
 }

@@ -1,6 +1,7 @@
 import { TrendingUp, ArrowUpRight, BarChart3, Calendar, AlertCircle } from 'lucide-react';
 import { useVideoContext } from '../context/VideoContext';
 import { useMemo } from 'react';
+import { type ExtractedVideo } from '../services/youtubeScraper';
 
 const WEEKS = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7'];
 

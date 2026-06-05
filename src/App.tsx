@@ -118,10 +118,8 @@ function AppShell(): React.ReactElement {
     setShowLanding(false);
   };
 
-  // NEW: Handles the handoff from the Google Login button
-  const handleGoogleLoginSuccess = (token: string) => {
-    localStorage.setItem('niche-radar-google-token', token);
-  };
+  // saveCredentials is already called inside LandingPage before this fires
+  const handleGoogleLoginSuccess = (_token: string) => {};
 
   const renderLeftContent = (): React.ReactElement => {
     switch (activeView) {

@@ -1,49 +1,66 @@
 import { Youtube, TrendingUp, Search, Zap, Settings, Layers, ArrowRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
+import { saveCredentials } from '../services/credentialsService';
 
 interface LandingPageProps {
   onEnterApp: () => void;
   onGoogleLoginSuccess: (accessToken: string) => void;
 }
 
+const OAUTH_SCOPES = [
+  'https://www.googleapis.com/auth/youtube.readonly',
+  'https://www.googleapis.com/auth/yt-analytics.readonly',
+].join(' ');
+
 export default function LandingPage({ onEnterApp, onGoogleLoginSuccess }: LandingPageProps): React.ReactElement {
   const { isDark } = useTheme();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleGoogleLogin = () => {
-    // Retrieve the user's BYOK Client ID
     const userClientId = localStorage.getItem('niche-radar-client-id');
 
     if (!userClientId) {
-      alert('Please enter your Google OAuth Client ID in App Settings first.');
+      setLoginError('Please enter your Google OAuth Client ID in App Settings first, then return here to sign in.');
       return;
     }
 
+    setLoginError(null);
     setIsLoggingIn(true);
-    
-    if (typeof window !== 'undefined' && (window as any).google) {
-      const client = (window as any).google.accounts.oauth2.initTokenClient({
-        client_id: userClientId, // Dynamic ID from user storage
-        scope: 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly',
-        callback: (response: any) => {
-          setIsLoggingIn(false);
-          if (response.access_token) {
-            onGoogleLoginSuccess(response.access_token);
-            onEnterApp();
-          }
-        },
-        error_callback: (err: any) => {
-          setIsLoggingIn(false);
-          console.error('Google Auth Error:', err);
-        }
-      });
-      
-      client.requestAccessToken();
-    } else {
+
+    const gis = (window as any).google?.accounts?.oauth2;
+    if (!gis) {
       setIsLoggingIn(false);
-      alert('Google authentication library not loaded yet. Please refresh.');
+      setLoginError('Google Identity Services library not loaded. Please refresh the page.');
+      return;
     }
+
+    const client = gis.initTokenClient({
+      client_id: userClientId,
+      scope: OAUTH_SCOPES,
+      callback: (response: any) => {
+        setIsLoggingIn(false);
+        if (response.error) {
+          setLoginError(`Sign-in failed: ${response.error_description || response.error}`);
+          return;
+        }
+        if (response.access_token) {
+          // Save with expiry so getValidToken() can detect when to refresh
+          saveCredentials(response.access_token, undefined, response.expires_in ?? 3600);
+          onGoogleLoginSuccess(response.access_token);
+          onEnterApp();
+        }
+      },
+      error_callback: (err: any) => {
+        setIsLoggingIn(false);
+        if (err?.type !== 'popup_closed') {
+          setLoginError(`Authentication error: ${err?.message || err?.type || 'Unknown error'}`);
+        }
+      },
+    });
+
+    client.requestAccessToken({ prompt: '' });
   };
 
   return (
@@ -74,16 +91,32 @@ export default function LandingPage({ onEnterApp, onGoogleLoginSuccess }: Landin
               Analyze YouTube's top-performing videos, extract winning formulas, and generate ready-to-use scripts and thumbnail prompts — powered by AI.
             </p>
 
+            {loginError && (
+              <div style={{
+                padding: '10px 14px',
+                borderRadius: '12px',
+                background: 'rgba(239,68,68,0.08)',
+                border: '1px solid rgba(239,68,68,0.2)',
+                fontSize: '0.82rem',
+                color: '#991B1B',
+                lineHeight: 1.5,
+                marginBottom: '8px',
+              }}>
+                {loginError}
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <button
                 onClick={handleGoogleLogin}
                 className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl transition-all hover:scale-[1.02] border font-bold"
-                style={{ 
-                  background: isDark ? '#1a1a1a' : '#ffffff', 
+                style={{
+                  background: isDark ? '#1a1a1a' : '#ffffff',
                   color: 'var(--text-primary)',
                   borderColor: 'var(--border-subtle)',
                   boxShadow: 'var(--shadow-clay-sm)',
-                  fontSize: '16px'
+                  fontSize: '16px',
+                  opacity: isLoggingIn ? 0.7 : 1,
                 }}
                 disabled={isLoggingIn}
               >

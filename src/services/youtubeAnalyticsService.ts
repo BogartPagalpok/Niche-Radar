@@ -1,4 +1,4 @@
-import { getCredentials, refreshGoogleToken } from './credentialsService';
+import { getCredentials, getValidToken } from './credentialsService';
 
 export interface VideoMetrics {
   videoId: string;
@@ -22,36 +22,32 @@ export interface AnalyticsError {
   message: string;
 }
 
-// Helper to format dates
 const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
-async function makeYouTubeAnalyticsRequest(
+async function makeAnalyticsRequest(
   endpoint: string,
   params: Record<string, string>
 ): Promise<any> {
-  let { googleToken } = getCredentials();
-
-  if (!googleToken) {
-    throw { code: 'MISSING_TOKEN', message: 'Google token not configured' } as AnalyticsError;
+  const token = await getValidToken();
+  if (!token) {
+    throw { code: 'MISSING_TOKEN', message: 'Google token not available' } as AnalyticsError;
   }
 
-  const executeFetch = async (token: string) => {
+  const executeFetch = (accessToken: string) => {
     const url = new URL(endpoint);
-    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-    return await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    return fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
     });
   };
 
   try {
-    let response = await executeFetch(googleToken);
+    let response = await executeFetch(token);
 
     if (response.status === 401) {
-      const newCredentials = await refreshGoogleToken();
-      if (newCredentials?.googleToken) {
-        googleToken = newCredentials.googleToken;
-        response = await executeFetch(googleToken);
-      }
+      localStorage.removeItem('niche-radar-token-expiry');
+      const fresh = await getValidToken();
+      if (fresh) response = await executeFetch(fresh);
     }
 
     if (!response.ok) {
@@ -76,8 +72,7 @@ export async function getVideoMetrics(videoId: string): Promise<VideoMetrics | n
     const start = new Date();
     start.setDate(end.getDate() - 30);
 
-    // FIX: Removed estimatedRevenue (not allowed for video filters) and added dates
-    const response = await makeYouTubeAnalyticsRequest(
+    const response = await makeAnalyticsRequest(
       'https://youtubeanalytics.googleapis.com/v2/reports',
       {
         ids: `channel==${channelId}`,
@@ -103,7 +98,7 @@ export async function getVideoMetrics(videoId: string): Promise<VideoMetrics | n
     return {
       videoId,
       views: getVal('views') || 0,
-      estimatedRevenue: 0, // Not available at video level
+      estimatedRevenue: 0,
       ctr: getVal('cardClickThroughRate') || 0,
       avgViewDuration: getVal('averageViewDuration') || 0,
       engagementRate: getVal('engagementRate') || 0,
@@ -117,12 +112,15 @@ export async function getVideoMetrics(videoId: string): Promise<VideoMetrics | n
 
 export async function getChannelStats(): Promise<ChannelStats | null> {
   try {
-    const { youtubeApiKey, channelId } = getCredentials();
-    if (!youtubeApiKey || !channelId) return null;
+    const { channelId, clientId } = getCredentials();
+    if (!channelId || !clientId) return null;
 
-    // FIX: Use YouTube API Key for public stats
+    const token = await getValidToken();
+    if (!token) return null;
+
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${youtubeApiKey}`
+      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
     const data = await response.json();
@@ -133,19 +131,19 @@ export async function getChannelStats(): Promise<ChannelStats | null> {
       viewCount: parseInt(stats.viewCount, 10),
       videoCount: parseInt(stats.videoCount, 10),
     } : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
 export async function getVideoStats(videoIds: string[]): Promise<Record<string, any>> {
   try {
-    const { youtubeApiKey } = getCredentials();
-    if (!youtubeApiKey) return {};
+    const token = await getValidToken();
+    if (!token) return {};
 
-    // FIX: Use YouTube API Key for public stats
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${videoIds.join(',')}&key=${youtubeApiKey}`
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${videoIds.join(',')}`,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
     const data = await response.json();
@@ -159,7 +157,7 @@ export async function getVideoStats(videoIds: string[]): Promise<Record<string, 
       };
     });
     return result;
-  } catch (e) {
+  } catch {
     return {};
   }
 }
