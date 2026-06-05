@@ -33,8 +33,12 @@ export function AnalysisReport({ video, metrics, scriptPrompt, thumbnailPrompt }
       const markdown = generateMarkdownDocument({
         video: video,
         metrics: metrics,
-        scriptPrompt: scriptPrompt,
-        thumbnailPrompt: thumbnailPrompt,
+        scriptPrompt: scriptPrompt && scriptPrompt.trim() !== '' 
+          ? scriptPrompt 
+          : '⚠️ No script prompt generated. Please generate the script prompt in the dashboard before exporting this report.',
+        thumbnailPrompt: thumbnailPrompt && thumbnailPrompt.trim() !== '' 
+          ? thumbnailPrompt 
+          : '⚠️ No thumbnail prompt generated. Please generate the thumbnail prompt in the dashboard before exporting this report.',
       });
 
       setState(prev => ({
