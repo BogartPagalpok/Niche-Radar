@@ -4,12 +4,16 @@ export async function expandQuery(query: string): Promise<string> {
   const cerebrasKey = localStorage.getItem(STORAGE_KEY_CEREBRAS);
   const currentYear = new Date().getFullYear();
 
+  // 1. No key → do something useful but minimal (still no hard‑coded year)
   if (!cerebrasKey) {
-    // Without AI, append a safe, intent‑neutral word so the query changes
-    return `${query} explained`;
+    // Deterministic, varied fallback – NEVER a year
+    const words = ['explained', 'guide', 'overview', 'analysis', 'review', 'insights'];
+    const pick = words.reduce((sum, w) => sum + w.charCodeAt(0), 0) + query.length;
+    return `${query} ${words[pick % words.length]}`;
   }
 
-  try {
+  // 2. First attempt – strict prompt
+  const makeRequest = async (isRetry: boolean): Promise<string> => {
     const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -21,34 +25,46 @@ export async function expandQuery(query: string): Promise<string> {
         messages: [
           {
             role: 'system',
-            content:
-              `You are a YouTube SEO expert. Follow these steps internally before giving your answer:
-1. Identify the user’s search INTENT (news, entertainment, education, review, documentary, etc.).
-2. Based on that intent, think of 2‑3 HIGH‑TRAFFIC YouTube modifiers (like "${currentYear}", "explained", "top 10", "full episode", "official", etc.). Do NOT force a year unless it makes sense for the intent.
-3. Combine the original query with those modifiers into ONE concise, natural‑sounding search phrase that real people would type into YouTube.
-
-Then output ONLY that final phrase. No extra text, no quotes, no explanation.`
+            content: isRetry
+              ? `FAILED ATTEMPT – you previously echoed the user input. This is forbidden.
+Turn the user's query into a specific, high‑traffic YouTube search phrase.
+Use the current year (${currentYear}) ONLY if relevant. Add at least 3 words.
+If the topic is very broad, make it concrete (e.g., "best computer builds" instead of "computer").
+Output ONLY the phrase. No quotes.`
+              : `You are a YouTube SEO engine. The user's query is exactly what they typed.
+Your job: produce a longer, more specific search phrase that people actually type into YouTube.
+- If the query is a single generic word, add context (e.g., "best", "how to", "news", "review").
+- Use the current year (${currentYear}) only if it makes sense for the topic.
+- NEVER echo the original word alone. Always add at least 2 extra words.
+- Output ONLY the final phrase. No quotes.`
           },
           { role: 'user', content: query }
         ],
-        temperature: 0.7,
-        max_tokens: 50,
+        temperature: 0.9,
+        max_tokens: 40,
       }),
     });
-
     const data = await res.json();
-    const expanded = data.choices?.[0]?.message?.content?.trim();
+    return data.choices?.[0]?.message?.content?.trim() || '';
+  };
 
-    if (expanded && expanded.toLowerCase() !== query.toLowerCase()) {
-      return expanded;
+  // 3. First try
+  try {
+    let result = await makeRequest(false);
+    if (result && result.toLowerCase() !== query.toLowerCase() && result.split(' ').length > 1) {
+      return result;
     }
+    // 4. Retry with harsher instruction
+    result = await makeRequest(true);
+    if (result && result.toLowerCase() !== query.toLowerCase()) {
+      return result;
+    }
+  } catch {}
 
-    // If AI still echoed the input, fall back to a safe modifier
-    return `${query} explained`;
-  } catch {
-    // API error – safe fallback
-    return `${query} explained`;
-  }
+  // 5. Absolute last resort – but still not a year
+  const fallbacks = ['explained', 'guide', 'overview', 'analysis', 'review', 'insights'];
+  const idx = query.length % fallbacks.length;
+  return `${query} ${fallbacks[idx]}`;
 }
 
 export async function identifyRelevantTopic(query: string): Promise<string> {
