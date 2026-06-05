@@ -201,14 +201,13 @@ async function pickBestVideo(
 }
 
 // ------------------------------------------------------------
-// 5. MAIN EXPORT – the whole machine (keeps old expandQuery too)
+// 5. MAIN EXPORTS (keep original interface)
 // ------------------------------------------------------------
-export async function expandQuery(query: string): Promise<string> {
-  return await expandQueryInternal(query); // expose if needed
-}
+export { expandQuery };
 
-// Internal alias
-const expandQueryInternal = expandQuery;
+export async function identifyRelevantTopic(query: string): Promise<string> {
+  return await expandQuery(query);
+}
 
 export async function findBestVideo(query: string): Promise<{
   videoId: string;
@@ -218,7 +217,7 @@ export async function findBestVideo(query: string): Promise<{
   score: number;
   expandedQuery: string;
 }> {
-  const expanded = await expandQueryInternal(query);
+  const expanded = await expandQuery(query);
   const candidates = await fetchCandidates(query);
   const best = await pickBestVideo(candidates, expanded);
 
@@ -234,9 +233,4 @@ export async function findBestVideo(query: string): Promise<{
     score: best.score,
     expandedQuery: expanded,
   };
-}
-
-// For backward compatibility – you may already use identifyRelevantTopic
-export async function identifyRelevantTopic(query: string): Promise<string> {
-  return await expandQueryInternal(query);
 }
