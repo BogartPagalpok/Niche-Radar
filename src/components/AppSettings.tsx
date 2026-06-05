@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { KeyRound, Cpu, Eye, EyeOff, Save, CheckCircle2, ShieldCheck, RefreshCw, Trash2, RefreshCcw } from 'lucide-react';
+import { KeyRound, Cpu, Eye, EyeOff, Save, CheckCircle2, ShieldCheck, RefreshCw, Trash2, RefreshCcw, Database, Github, Zap } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import {
   STORAGE_KEY_REFRESH_TOKEN,
@@ -9,6 +9,11 @@ import {
   STORAGE_KEY_CLIENT_SECRET,
   STORAGE_KEY_ACCESS_TOKEN,
   STORAGE_KEY_TOKEN_EXPIRY,
+  STORAGE_KEY_CEREBRAS,
+  STORAGE_KEY_GROQ,
+  STORAGE_KEY_GITHUB,
+  STORAGE_KEY_SUPADATA,
+  STORAGE_KEY_APIFY,
   getValidToken,
 } from '../services/credentialsService';
 
@@ -128,13 +133,27 @@ export default function AppSettings() {
   const [clientSecret, setClientSecret] = useState('');
   const [refreshToken, setRefreshToken] = useState('');
   const [channelId, setChannelId] = useState('');
+  
+  // AI Keys
   const [geminiKey, setGeminiKey] = useState('');
+  const [cerebrasKey, setCerebrasKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
+  const [githubToken, setGithubToken] = useState('');
+  
+  // Data Keys
+  const [supadataKey, setSupadataKey] = useState('');
+  const [apifyKey, setApifyKey] = useState('');
 
   const [savedClientId, setSavedClientId] = useState(false);
   const [savedClientSecret, setSavedClientSecret] = useState(false);
   const [savedRefreshToken, setSavedRefreshToken] = useState(false);
   const [savedChannelId, setSavedChannelId] = useState(false);
   const [savedGemini, setSavedGemini] = useState(false);
+  const [savedCerebras, setSavedCerebras] = useState(false);
+  const [savedGroq, setSavedGroq] = useState(false);
+  const [savedGithub, setSavedGithub] = useState(false);
+  const [savedSupadata, setSavedSupadata] = useState(false);
+  const [savedApify, setSavedApify] = useState(false);
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
@@ -145,19 +164,22 @@ export default function AppSettings() {
     const cs = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET) ?? '';
     const rt = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN) ?? '';
     const ch = localStorage.getItem(STORAGE_KEY_CHANNEL_ID) ?? '';
+    
     const gk = localStorage.getItem(STORAGE_KEY_GEMINI) ?? '';
+    const cer = localStorage.getItem(STORAGE_KEY_CEREBRAS) ?? '';
+    const grq = localStorage.getItem(STORAGE_KEY_GROQ) ?? '';
+    const gh = localStorage.getItem(STORAGE_KEY_GITHUB) ?? '';
+    
+    const sd = localStorage.getItem(STORAGE_KEY_SUPADATA) ?? '';
+    const ap = localStorage.getItem(STORAGE_KEY_APIFY) ?? '';
 
-    setClientId(cid);
-    setClientSecret(cs);
-    setRefreshToken(rt);
-    setChannelId(ch);
-    setGeminiKey(gk);
+    setClientId(cid); setClientSecret(cs); setRefreshToken(rt); setChannelId(ch);
+    setGeminiKey(gk); setCerebrasKey(cer); setGroqKey(grq); setGithubToken(gh);
+    setSupadataKey(sd); setApifyKey(ap);
 
-    setSavedClientId(!!cid);
-    setSavedClientSecret(!!cs);
-    setSavedRefreshToken(!!rt);
-    setSavedChannelId(!!ch);
-    setSavedGemini(!!gk);
+    setSavedClientId(!!cid); setSavedClientSecret(!!cs); setSavedRefreshToken(!!rt); setSavedChannelId(!!ch);
+    setSavedGemini(!!gk); setSavedCerebras(!!cer); setSavedGroq(!!grq); setSavedGithub(!!gh);
+    setSavedSupadata(!!sd); setSavedApify(!!ap);
   }, []);
 
   const handleSave = () => {
@@ -167,17 +189,26 @@ export default function AppSettings() {
     localStorage.setItem(STORAGE_KEY_CLIENT_SECRET, clientSecret.trim());
     localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, refreshToken.trim());
     localStorage.setItem(STORAGE_KEY_CHANNEL_ID, channelId.trim());
+    
     localStorage.setItem(STORAGE_KEY_GEMINI, geminiKey.trim());
+    localStorage.setItem(STORAGE_KEY_CEREBRAS, cerebrasKey.trim());
+    localStorage.setItem(STORAGE_KEY_GROQ, groqKey.trim());
+    localStorage.setItem(STORAGE_KEY_GITHUB, githubToken.trim());
+    
+    localStorage.setItem(STORAGE_KEY_SUPADATA, supadataKey.trim());
+    localStorage.setItem(STORAGE_KEY_APIFY, apifyKey.trim());
 
     // Clear cached access token so it gets refreshed on next use
     localStorage.removeItem(STORAGE_KEY_ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEY_TOKEN_EXPIRY);
 
-    setSavedClientId(!!clientId.trim());
-    setSavedClientSecret(!!clientSecret.trim());
-    setSavedRefreshToken(!!refreshToken.trim());
-    setSavedChannelId(!!channelId.trim());
-    setSavedGemini(!!geminiKey.trim());
+    setSavedClientId(!!clientId.trim()); setSavedClientSecret(!!clientSecret.trim());
+    setSavedRefreshToken(!!refreshToken.trim()); setSavedChannelId(!!channelId.trim());
+    
+    setSavedGemini(!!geminiKey.trim()); setSavedCerebras(!!cerebrasKey.trim());
+    setSavedGroq(!!groqKey.trim()); setSavedGithub(!!githubToken.trim());
+    
+    setSavedSupadata(!!supadataKey.trim()); setSavedApify(!!apifyKey.trim());
 
     setTimeout(() => setSaveStatus('saved'), 350);
     setTimeout(() => setSaveStatus('idle'), 2200);
@@ -185,12 +216,19 @@ export default function AppSettings() {
 
   const handleClear = () => {
     [STORAGE_KEY_CLIENT_ID, STORAGE_KEY_CLIENT_SECRET, STORAGE_KEY_REFRESH_TOKEN,
-      STORAGE_KEY_CHANNEL_ID, STORAGE_KEY_GEMINI, STORAGE_KEY_ACCESS_TOKEN, STORAGE_KEY_TOKEN_EXPIRY]
+      STORAGE_KEY_CHANNEL_ID, STORAGE_KEY_GEMINI, STORAGE_KEY_CEREBRAS, STORAGE_KEY_GROQ,
+      STORAGE_KEY_GITHUB, STORAGE_KEY_SUPADATA, STORAGE_KEY_APIFY, 
+      STORAGE_KEY_ACCESS_TOKEN, STORAGE_KEY_TOKEN_EXPIRY]
       .forEach(k => localStorage.removeItem(k));
 
-    setClientId(''); setClientSecret(''); setRefreshToken(''); setChannelId(''); setGeminiKey('');
-    setSavedClientId(false); setSavedClientSecret(false); setSavedRefreshToken(false);
-    setSavedChannelId(false); setSavedGemini(false);
+    setClientId(''); setClientSecret(''); setRefreshToken(''); setChannelId('');
+    setGeminiKey(''); setCerebrasKey(''); setGroqKey(''); setGithubToken('');
+    setSupadataKey(''); setApifyKey('');
+    
+    setSavedClientId(false); setSavedClientSecret(false); setSavedRefreshToken(false); setSavedChannelId(false);
+    setSavedGemini(false); setSavedCerebras(false); setSavedGroq(false); setSavedGithub(false);
+    setSavedSupadata(false); setSavedApify(false);
+    
     setTestStatus('idle');
   };
 
@@ -213,7 +251,7 @@ export default function AppSettings() {
     setTimeout(() => setTestStatus('idle'), 5000);
   };
 
-  const anyFilled = clientId || clientSecret || refreshToken || channelId || geminiKey;
+  const anyFilled = clientId || clientSecret || refreshToken || channelId || geminiKey || cerebrasKey || groqKey || githubToken || supadataKey || apifyKey;
 
   return (
     <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -222,11 +260,10 @@ export default function AppSettings() {
           App Settings
         </h2>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Configure credentials once — the app handles token refresh automatically.
+          Configure credentials once — the app handles storage and fallback logic automatically.
         </p>
       </div>
 
-      {/* Security notice */}
       <div
         style={{
           display: 'flex',
@@ -241,11 +278,10 @@ export default function AppSettings() {
         <ShieldCheck size={14} strokeWidth={2.5} color="var(--mint-text)" style={{ flexShrink: 0, marginTop: '1px' }} />
         <p style={{ fontSize: '0.72rem', color: 'var(--mint-text)', lineHeight: 1.6, fontWeight: 500 }}>
           All keys are stored in <strong>localStorage</strong> only — nothing leaves your browser.
-          Access tokens refresh automatically using your Refresh Token.
         </p>
       </div>
 
-      {/* Credential fields */}
+      {/* AI Fallback Chain Section */}
       <div
         style={{
           background: 'var(--bg-panel)',
@@ -257,78 +293,101 @@ export default function AppSettings() {
           overflow: 'hidden',
         }}
       >
-        <div
-          style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-          }}
-        />
-
+        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+           <Zap size={16} color="var(--yt-red)"/> AI Generation Providers
+        </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <CredentialField
-            id="client-id"
-            label="Google Client ID"
-            hint="From Google Cloud Console → OAuth 2.0 Client IDs."
-            placeholder="your-id.apps.googleusercontent.com"
-            icon={KeyRound}
-            value={clientId}
-            onChange={setClientId}
-            saved={savedClientId}
+            id="cerebras-key" label="Cerebras API Key (Primary Text)" hint="Powers unlimited script generation. Free tier: 1M tokens/day."
+            placeholder="csk-..." icon={Cpu} value={cerebrasKey} onChange={setCerebrasKey} saved={savedCerebras}
           />
           <div className="clay-divider" />
           <CredentialField
-            id="client-secret"
-            label="Google Client Secret"
-            hint="Paired with the Client ID above."
-            placeholder="GOCSPX-..."
-            icon={KeyRound}
-            value={clientSecret}
-            onChange={setClientSecret}
-            saved={savedClientSecret}
+            id="groq-key" label="Groq API Key (Fallback Text)" hint="High-speed fallback. Free tier: 14,400 requests/day."
+            placeholder="gsk_..." icon={Cpu} value={groqKey} onChange={setGroqKey} saved={savedGroq}
           />
           <div className="clay-divider" />
           <CredentialField
-            id="refresh-token"
-            label="Google Refresh Token"
-            hint="Long-lived token used to auto-generate Access Tokens. Obtain via the Sign-in flow."
-            placeholder="1//0g..."
-            icon={RefreshCcw}
-            value={refreshToken}
-            onChange={setRefreshToken}
-            saved={savedRefreshToken}
+            id="github-token" label="GitHub Token (Primary Vision)" hint="Powers thumbnail analysis via GPT-4o."
+            placeholder="github_pat_..." icon={Github} value={githubToken} onChange={setGithubToken} saved={savedGithub}
           />
           <div className="clay-divider" />
           <CredentialField
-            id="channel-id"
-            label="YouTube Channel ID"
-            hint="Your channel ID for analytics. Starts with UC…"
-            placeholder="UCxxx···"
-            icon={KeyRound}
-            value={channelId}
-            onChange={setChannelId}
-            saved={savedChannelId}
+            id="gemini-key" label="Gemini API Key (Fallback Vision)" hint="Backup vision and legacy tool operations."
+            placeholder="AIzaSy···" icon={Cpu} value={geminiKey} onChange={setGeminiKey} saved={savedGemini}
+          />
+        </div>
+      </div>
+
+      {/* Data Scrapers Section */}
+      <div
+        style={{
+          background: 'var(--bg-panel)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-clay-lg)',
+          border: '1px solid var(--border-subtle)',
+          padding: '20px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+           <Database size={16} color="#3B82F6"/> Data & Scraping Proxies
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <CredentialField
+            id="supadata-key" label="Supadata API Key" hint="Used for bypassing YouTube limits to extract transcripts and metadata."
+            placeholder="sd_..." icon={Database} value={supadataKey} onChange={setSupadataKey} saved={savedSupadata}
           />
           <div className="clay-divider" />
           <CredentialField
-            id="gemini-key"
-            label="Gemini API Key"
-            hint="Powers AI script & thumbnail prompt generation via Google AI Studio."
-            placeholder="AIzaSy···"
-            icon={Cpu}
-            value={geminiKey}
-            onChange={setGeminiKey}
-            saved={savedGemini}
+            id="apify-key" label="Apify API Token" hint="Used for bulk channel scraping and deep analytics."
+            placeholder="apify_api_..." icon={Database} value={apifyKey} onChange={setApifyKey} saved={savedApify}
+          />
+        </div>
+      </div>
+
+      {/* Google Auth Section */}
+      <div
+        style={{
+          background: 'var(--bg-panel)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-clay-lg)',
+          border: '1px solid var(--border-subtle)',
+          padding: '20px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+           <KeyRound size={16} color="#EAB308"/> Google OAuth (Analytics)
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <CredentialField
+            id="client-id" label="Google Client ID" hint="From Google Cloud Console → OAuth 2.0 Client IDs."
+            placeholder="your-id.apps.googleusercontent.com" icon={KeyRound} value={clientId} onChange={setClientId} saved={savedClientId}
+          />
+          <div className="clay-divider" />
+          <CredentialField
+            id="client-secret" label="Google Client Secret" hint="Paired with the Client ID above."
+            placeholder="GOCSPX-..." icon={KeyRound} value={clientSecret} onChange={setClientSecret} saved={savedClientSecret}
+          />
+          <div className="clay-divider" />
+          <CredentialField
+            id="refresh-token" label="Google Refresh Token" hint="Long-lived token used to auto-generate Access Tokens."
+            placeholder="1//0g..." icon={RefreshCcw} value={refreshToken} onChange={setRefreshToken} saved={savedRefreshToken}
+          />
+          <div className="clay-divider" />
+          <CredentialField
+            id="channel-id" label="YouTube Channel ID" hint="Your channel ID for analytics. Starts with UC…"
+            placeholder="UCxxx···" icon={KeyRound} value={channelId} onChange={setChannelId} saved={savedChannelId}
           />
         </div>
       </div>
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleSave}
-          className="clay-btn-red flex items-center gap-2 px-5 py-3 flex-1"
-          style={{ justifyContent: 'center' }}
-        >
+        <button onClick={handleSave} className="clay-btn-red flex items-center gap-2 px-5 py-3 flex-1" style={{ justifyContent: 'center' }}>
           {saveStatus === 'saving' ? (
             <RefreshCw size={14} strokeWidth={2.5} style={{ animation: 'spin 0.6s linear infinite' }} />
           ) : saveStatus === 'saved' ? (
@@ -336,50 +395,29 @@ export default function AppSettings() {
           ) : (
             <Save size={14} strokeWidth={2.5} />
           )}
-          <span>
-            {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved!' : 'Save Credentials'}
-          </span>
+          <span>{saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved!' : 'Save Credentials'}</span>
         </button>
 
         {anyFilled && (
-          <button
-            onClick={handleClear}
-            className="clay-btn-secondary flex items-center gap-2 px-4 py-3"
-            title="Clear all stored credentials"
-          >
+          <button onClick={handleClear} className="clay-btn-secondary flex items-center gap-2 px-4 py-3" title="Clear all stored credentials">
             <Trash2 size={14} strokeWidth={2} color="var(--text-secondary)" />
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Clear</span>
           </button>
         )}
       </div>
 
-      {/* Test connection */}
-      <button
-        onClick={handleTestConnection}
-        disabled={testStatus === 'testing'}
-        className="clay-btn-secondary flex items-center justify-center gap-2 px-4 py-2.5 w-full"
-        style={{ fontSize: '0.8rem' }}
-      >
-        {testStatus === 'testing' ? (
-          <RefreshCw size={13} strokeWidth={2.5} style={{ animation: 'spin 0.6s linear infinite' }} />
-        ) : (
-          <RefreshCcw size={13} strokeWidth={2.5} />
-        )}
+      <button onClick={handleTestConnection} disabled={testStatus === 'testing'} className="clay-btn-secondary flex items-center justify-center gap-2 px-4 py-2.5 w-full" style={{ fontSize: '0.8rem' }}>
+        {testStatus === 'testing' ? <RefreshCw size={13} strokeWidth={2.5} style={{ animation: 'spin 0.6s linear infinite' }} /> : <RefreshCcw size={13} strokeWidth={2.5} />}
         {testStatus === 'testing' ? 'Testing…' : 'Test Token / Force Refresh'}
       </button>
 
       {testMsg && (
-        <div
-          style={{
-            padding: '10px 14px',
-            borderRadius: 'var(--radius-sm)',
-            background: testStatus === 'ok' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${testStatus === 'ok' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-            fontSize: '0.75rem',
-            color: testStatus === 'ok' ? '#15803D' : '#991B1B',
-            lineHeight: 1.5,
-          }}
-        >
+        <div style={{
+          padding: '10px 14px', borderRadius: 'var(--radius-sm)',
+          background: testStatus === 'ok' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+          border: `1px solid ${testStatus === 'ok' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+          fontSize: '0.75rem', color: testStatus === 'ok' ? '#15803D' : '#991B1B', lineHeight: 1.5,
+        }}>
           {testMsg}
         </div>
       )}
@@ -387,11 +425,11 @@ export default function AppSettings() {
       {/* Status indicators */}
       <div className="flex items-center gap-3 flex-wrap">
         {[
-          { label: 'Client ID', stored: savedClientId },
-          { label: 'Client Secret', stored: savedClientSecret },
-          { label: 'Refresh Token', stored: savedRefreshToken },
-          { label: 'Channel ID', stored: savedChannelId },
-          { label: 'Gemini Key', stored: savedGemini },
+          { label: 'Cerebras', stored: savedCerebras },
+          { label: 'Groq', stored: savedGroq },
+          { label: 'GitHub', stored: savedGithub },
+          { label: 'Supadata', stored: savedSupadata },
+          { label: 'Gemini', stored: savedGemini },
         ].map(({ label, stored }) => (
           <div key={label} className="clay-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <span style={{
@@ -399,7 +437,7 @@ export default function AppSettings() {
               background: stored ? '#22C55E' : 'var(--border-strong)',
               boxShadow: stored ? '0 0 5px rgba(34,197,94,0.5)' : 'none',
             }} />
-            <span>{label}: {stored ? 'Set' : 'Not Set'}</span>
+            <span>{label}</span>
           </div>
         ))}
       </div>
