@@ -2,7 +2,7 @@ export async function expandQuery(query: string): Promise<string> {
   const cerebrasKey = localStorage.getItem('niche_radar_cerebras_key');
   
   if (!cerebrasKey) {
-    console.warn("No API key. Skipping expansion.");
+    console.warn("Cerebras API key not found. Skipping expansion.");
     return query;
   }
 
@@ -14,29 +14,35 @@ export async function expandQuery(query: string): Promise<string> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama3-8b',
+        // Verified model name for Cerebras API
+        model: 'llama-3.1-8b',
         messages: [
           { 
             role: 'system', 
-            content: 'You are a search query optimizer. Output ONLY a concise, SEO-friendly search string for YouTube based on the user topic. Do not include quotes or conversational filler.' 
+            content: 'You are a search query optimizer for Niche Radar. Transform the user query into a hyper-specific, SEO-optimized YouTube search string. Return ONLY the search string.' 
           },
-          { role: 'user', content: query }
+          { 
+            role: 'user', 
+            content: `Optimize this for YouTube: "${query}"` 
+          }
         ],
-        temperature: 0.5,
-        max_tokens: 30
+        temperature: 0.3,
+        max_tokens: 50
       })
     });
 
-    if (!response.ok) throw new Error(`API returned ${response.status}`);
-    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API Status ${response.status}: ${errorText}`);
+    }
+
     const data = await response.json();
-    const expanded = data.choices[0].message.content.trim();
+    const expanded = data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
     
-    // Safety check to ensure we didn't get an empty or error string
-    return expanded && expanded.length > 3 ? expanded : query;
+    return expanded.length > 3 ? expanded : query;
     
   } catch (e) {
     console.error("AI Expansion Error:", e);
-    return query; // Silent fallback
+    return query; // Fallback
   }
 }
