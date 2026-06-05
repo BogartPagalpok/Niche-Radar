@@ -1,73 +1,56 @@
-import { STORAGE_KEY_CEREBRAS } from './credentialsService';
-import youtubeSearchApi from 'youtube-search-api';
+(async function debugAllModels() {
+  const query = prompt("Enter test query:", "GAMEBOY");
+  if (!query) return;
 
-const MODELS = ['gpt-oss-120b', 'zai-glm-4.7'];
+  const key = localStorage.getItem('niche_radar_cerebras_key');
+  if (!key) { console.warn('❌ No Cerebras key found in localStorage'); return; }
 
-async function tryModel(model: string, query: string, key: string): Promise<string | null> {
-  try {
-    const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: `Turn the user's search term into a longer YouTube search phrase. Add 2‑4 descriptive words. Return ONLY the phrase.`
-          },
-          { role: 'user', content: query }
-        ],
-        temperature: 0.6,
-        max_tokens: 30,
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const expanded = data.choices?.[0]?.message?.content?.trim();
-    if (expanded && expanded.toLowerCase() !== query.toLowerCase()) {
-      return expanded;
-    }
-  } catch {}
-  return null;
-}
+  const models = [
+    'llama3.1-8b',
+    'zai-glm-4.7',
+    'gpt-oss-120b',
+    'qwen-3-235b-a22b-instruct-2507',
+  ];
 
-async function getYoutubeSuggestion(query: string): Promise<string | null> {
-  try {
-    const suggestions = await youtubeSearchApi.getSearchSuggestions(query);
-    // youtube-search-api may return an array of strings directly, or an object
-    const list = Array.isArray(suggestions) ? suggestions : suggestions?.data;
-    if (list && list.length) {
-      // pick the longest, most specific suggestion
-      return list.reduce((a: string, b: string) => (a.length > b.length ? a : b));
-    }
-  } catch {}
-  return null;
-}
+  console.log(`🧪 Testing all models for query: "${query}"\n`);
 
-export async function expandQuery(query: string): Promise<string> {
-  const key = localStorage.getItem(STORAGE_KEY_CEREBRAS);
+  for (const model of models) {
+    try {
+      const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: "Turn the user's short search term into a longer, natural YouTube search phrase. Add a few descriptive words that fit the topic. Return ONLY the phrase."
+            },
+            { role: 'user', content: query }
+          ],
+          temperature: 0.6,
+          max_tokens: 30,
+        }),
+      });
 
-  if (key) {
-    // 1. Try both Cerebras models
-    for (const model of MODELS) {
-      const result = await tryModel(model, query, key);
-      if (result) return result;
+      const status = res.status;
+      const data = await res.json();
+      const output = data.choices?.[0]?.message?.content?.trim();
+
+      if (status === 200 && output && output.toLowerCase() !== query.toLowerCase()) {
+        console.log(`%c✅ ${model}:%c "${output}"`, 'color: green; font-weight: bold', 'color: inherit');
+      } else if (status === 200 && (!output || output.toLowerCase() === query.toLowerCase())) {
+        console.warn(`⚠️  ${model}: empty or echoed (raw: "${output}")`);
+      } else if (status === 429) {
+        console.warn(`⏳ ${model}: rate limited (429)`);
+      } else {
+        console.error(`❌ ${model}: HTTP ${status} – ${JSON.stringify(data)}`);
+      }
+    } catch (e) {
+      console.error(`💥 ${model}: network error – ${e.message}`);
     }
   }
-
-  // 2. Fallback to live YouTube autocomplete (dynamic, no hardcoded words)
-  const ytSuggestion = await getYoutubeSuggestion(query);
-  if (ytSuggestion && ytSuggestion.toLowerCase() !== query.toLowerCase()) {
-    return ytSuggestion;
-  }
-
-  // 3. Absolute last resort – raw query (YouTube’s own ranking is excellent)
-  return query;
-}
-
-export async function identifyRelevantTopic(query: string): Promise<string> {
-  return expandQuery(query);
-}
+})();
