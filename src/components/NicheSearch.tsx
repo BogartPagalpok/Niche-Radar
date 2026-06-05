@@ -16,6 +16,7 @@ interface SearchState {
   error: string | null;
   continuation: string | null;
   hasSearched: boolean;
+  searchTarget: string; // Added to handle infinite scroll pagination safely
 }
 
 export default function NicheSearch(): React.ReactElement {
@@ -29,12 +30,13 @@ export default function NicheSearch(): React.ReactElement {
     error: null,
     continuation: null,
     hasSearched: false,
+    searchTarget: '',
   });
 
   const loadMoreCountRef = useRef<number>(0);
 
   const performSearch = useCallback(
-    async (query: string, continuation: string | null = null): Promise<void> => {
+    async (targetQuery: string, seedQuery: string, continuation: string | null = null): Promise<void> => {
       const isInitialSearch = !continuation;
 
       setState(prev => ({
@@ -44,7 +46,7 @@ export default function NicheSearch(): React.ReactElement {
       }));
 
       try {
-        const result = await searchYouTubeVideos(query, continuation);
+        const result = await searchYouTubeVideos(targetQuery, continuation);
         const parsedVideos = result.videos;
 
         if (parsedVideos.length === 0 && isInitialSearch) {
@@ -63,7 +65,7 @@ export default function NicheSearch(): React.ReactElement {
           const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
           
           // Apply the ranking engine to sort/filter before showing on screen
-          const rankedVideos = processVideoResults(prev.query, [query], [totalVideos]);
+          const rankedVideos = processVideoResults(seedQuery, [targetQuery], [totalVideos]);
           
           setTimeout(() => setSearchedVideos(rankedVideos), 0);
 
@@ -74,7 +76,8 @@ export default function NicheSearch(): React.ReactElement {
             isLoading: false,
             isLoadingMore: false,
             hasSearched: true,
-            query: query,
+            query: seedQuery, // Keep the input box showing what the user typed
+            searchTarget: targetQuery, // Save the AI keyword for infinite scroll
           };
         });
       } catch (err) {
@@ -101,12 +104,11 @@ export default function NicheSearch(): React.ReactElement {
     
     try {
       const expandedQuery = await expandQuery(trimmedQuery);
-      // Fix: Ensure we actually perform the search with the result, even if it matches the original
       console.log("Original Search:", trimmedQuery, "| Final Search:", expandedQuery);
-      performSearch(expandedQuery, null);
+      performSearch(expandedQuery, trimmedQuery, null);
     } catch (err) {
       console.error("Expansion failed, falling back:", err);
-      performSearch(trimmedQuery, null);
+      performSearch(trimmedQuery, trimmedQuery, null);
     }
   }, [state.query, performSearch]);
 
@@ -117,8 +119,8 @@ export default function NicheSearch(): React.ReactElement {
 
     loadMoreCountRef.current += 1;
 
-    performSearch(state.query, state.continuation);
-  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, performSearch]);
+    performSearch(state.searchTarget || state.query, state.query, state.continuation);
+  }, [state.isLoadingMore, state.continuation, state.isLoading, state.query, state.searchTarget, performSearch]);
 
   const sentinelRef = useInfiniteScroll(handleLoadMore, {
     threshold: 0.1,
