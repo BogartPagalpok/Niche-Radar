@@ -79,14 +79,14 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
       {/* MOBILE BOTTOM NAV */}
       <div className="flex lg:hidden w-full items-center justify-center p-0 fixed bottom-4 left-0 right-0 z-50 bg-transparent">
         <div 
-          className="flex flex-row items-center justify-between w-[calc(100%-32px)] sm:w-[calc(100%-40px)] max-w-[420px]"
+          className="flex flex-row items-center gap-1 w-[calc(100%-24px)] sm:w-[calc(100%-32px)] max-w-[440px] overflow-x-auto"
           style={{ 
             background: isDark ? 'rgba(23, 23, 23, 0.85)' : 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '24px',
-            padding: '6px',
+            padding: '4px 6px',
             boxShadow: isDark 
               ? '0 12px 40px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)'
               : '0 12px 40px 0 rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.6)',
@@ -103,12 +103,12 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className="flex flex-row items-center justify-center gap-2 flex-shrink-0 transition-all duration-300 ease-out"
+                className="flex flex-row items-center justify-center gap-1.5 flex-shrink-0 transition-all duration-300 ease-out"
                 style={{
                   flex: isActive ? '1 0 auto' : '0 0 auto',
-                  width: isActive ? 'auto' : '44px',
-                  height: '44px',
-                  padding: isActive ? '0 16px' : '0',
+                  minWidth: isActive ? 'auto' : '38px',
+                  height: '40px',
+                  padding: isActive ? '0 10px' : '0 4px',
                   background: isActive 
                     ? isDark
                       ? 'linear-gradient(135deg, rgba(255,51,51,0.18) 0%, rgba(204,0,0,0.1) 100%)' 
@@ -119,7 +119,7 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
                       ? '1px solid rgba(255,51,51,0.3)' 
                       : '1px solid rgba(255,51,51,0.2)' 
                     : '1px solid transparent',
-                  borderRadius: '18px',
+                  borderRadius: '16px',
                   cursor: 'pointer',
                   boxSizing: 'border-box',
                   overflow: 'hidden',
@@ -127,7 +127,7 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
                 title={item.label}
               >
                 <Icon
-                  size={20}
+                  size={18}
                   strokeWidth={isActive ? 2.5 : 2}
                   color={isActive ? 'var(--yt-red)' : isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
                   style={{ transition: 'color 200ms ease', flexShrink: 0 }}
@@ -135,7 +135,7 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
                 {isActive && (
                   <span
                     style={{
-                      fontSize: '0.85rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
                       color: 'var(--yt-red)',
                       lineHeight: 1,
@@ -149,12 +149,12 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
             );
           })}
 
-          {/* MOBILE INLINE TOGGLE PANEL ROW LINK */}
+          {/* MOBILE THEME TOGGLE - compact and inside the bar */}
           <div 
             onClick={toggleTheme}
             style={{
-              width: '42px',
-              height: '24px',
+              width: '36px',
+              height: '22px',
               backgroundColor: isDark ? '#1D1F2C' : '#3D7EAE',
               borderRadius: '100px',
               position: 'relative',
@@ -162,19 +162,19 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
               overflow: 'hidden',
               boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)',
               cursor: 'pointer',
-              marginRight: '4px',
               flexShrink: 0,
+              marginLeft: '4px',
             }}
           >
             <div 
               style={{
-                width: '18px',
-                height: '18px',
+                width: '16px',
+                height: '16px',
                 borderRadius: '50%',
                 backgroundColor: isDark ? '#C4C9D1' : '#ECCA2F',
                 position: 'absolute',
                 top: '3px',
-                left: isDark ? '21px' : '3px',
+                left: isDark ? '17px' : '3px',
                 transition: 'all 0.3s cubic-bezier(0, -0.02, 0.35, 1.17)',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                 display: 'flex',
@@ -183,8 +183,8 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
             >
               {isDark && (
                 <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                  <div style={{ position: 'absolute', top: '4px', left: '2px', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
-                  <div style={{ position: 'absolute', top: '10px', left: '9px', width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
+                  <div style={{ position: 'absolute', top: '3px', left: '2px', width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
+                  <div style={{ position: 'absolute', top: '8px', left: '7px', width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#959DB1' }} />
                 </div>
               )}
             </div>
