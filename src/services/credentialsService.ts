@@ -26,6 +26,8 @@ export interface Credentials {
   clientId: string | null;
   clientSecret: string | null;
   youtubeApiKey: null;          // removed – kept for type compat
+  supadataKey: string | null;
+  apifyKey: string | null;
 }
 
 export function getCredentials(): Credentials {
@@ -39,6 +41,8 @@ export function getCredentials(): Credentials {
     clientId: localStorage.getItem(STORAGE_KEY_CLIENT_ID),
     clientSecret: localStorage.getItem(STORAGE_KEY_CLIENT_SECRET),
     youtubeApiKey: null,
+    supadataKey: localStorage.getItem(STORAGE_KEY_SUPADATA),
+    apifyKey: localStorage.getItem(STORAGE_KEY_APIFY),
   };
 }
 
