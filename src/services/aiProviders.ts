@@ -2,7 +2,27 @@
 // with intelligent fallbacks so a burned/rate-limited key never kills a feature.
 //
 // Design rationale:
-//  - Cerebras 
+//  - Cerebras (gpt-oss-120b): blazing-fast inference + strong long-form reasoning.
+//        => best for SCRIPTS (long/complex) and SEARCH expansion (needs speed).
+//  - GPT-4o (GitHub Models): best creative + visual language, true multimodal.
+//        => best for THUMBNAIL prompts (creative) and VISION (seeing images).
+//  - Groq (llama-3.3-70b): fast, solid general fallback.
+//  - Gemini: last-resort fallback (kept even if quota is low).
+
+const STORAGE_KEY_GITHUB = 'niche_radar_github_token';
+const STORAGE_KEY_CEREBRAS = 'niche_radar_cerebras_key';
+const STORAGE_KEY_GROQ = 'niche_radar_groq_key';
+const STORAGE_KEY_GEMINI = 'niche-radar-gemini-key';
+
+export type AiTask = 'search' | 'script' | 'thumbnail' | 'general';
+
+export interface TextResult {
+  text: string;
+  provider: string;
+  error?: string;
+}
+
+interface GenOptions {
   system?: string;
   prompt: string;
   temperature?: number;
