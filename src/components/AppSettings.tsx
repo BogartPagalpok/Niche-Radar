@@ -14,6 +14,18 @@ import {
 
 // These constants are defined locally here to ensure the build succeeds 
 // without needing to modify your existing credentialsService.ts file.
+const STORAGE_KEY_RPM = 'niche-radar-assumed-rpm';
+
+// Niche RPM presets (Net RPM = $ kept per 1,000 views after YouTube's cut).
+const RPM_PRESETS = [
+  { label: 'Gaming / Entertainment', value: 1 },
+  { label: 'Vlogs / Lifestyle', value: 2 },
+  { label: 'Tech / Reviews', value: 4 },
+  { label: 'Education / How-to', value: 6 },
+  { label: 'Business / Marketing', value: 9 },
+  { label: 'Finance / Crypto', value: 14 },
+];
+
 const STORAGE_KEY_CEREBRAS = 'niche_radar_cerebras_key';
 const STORAGE_KEY_GROQ = 'niche_radar_groq_key';
 const STORAGE_KEY_GITHUB = 'niche_radar_github_token';
@@ -146,6 +158,16 @@ export default function AppSettings() {
   // Data Keys
   const [supadataKey, setSupadataKey] = useState('');
   const [apifyKey, setApifyKey] = useState('');
+  const [assumedRpm, setAssumedRpm] = useState<number>(() => {
+    const raw = localStorage.getItem(STORAGE_KEY_RPM);
+    const n = raw ? parseFloat(raw) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : 2;
+  });
+
+  const handleRpmChange = (value: number): void => {
+    setAssumedRpm(value);
+    localStorage.setItem(STORAGE_KEY_RPM, String(value));
+  };
 
   const [saved, setSaved] = useState({
     clientId: false, clientSecret: false, refreshToken: false, channelId: false,
@@ -300,6 +322,64 @@ export default function AppSettings() {
             placeholder="AIzaSy···" icon={Cpu} value={geminiKey} onChange={setGeminiKey} saved={saved.gemini}
           />
         </div>
+      </div>
+
+      {/* Revenue Estimation Section */}
+      <div
+        style={{
+          background: 'var(--bg-panel)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-clay-lg)',
+          border: '1px solid var(--border-subtle)',
+          padding: '24px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Zap size={16} color="#22C55E" /> Revenue Estimation
+        </h3>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+          Pick the niche closest to your content. This sets the Net RPM used to
+          estimate earnings from a video's public view count.
+        </p>
+
+        <label htmlFor="rpm-preset" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
+          Niche (Net RPM)
+        </label>
+        <select
+          id="rpm-preset"
+          value={RPM_PRESETS.some(p => p.value === assumedRpm) ? assumedRpm : 'custom'}
+          onChange={(e) => {
+            if (e.target.value !== 'custom') handleRpmChange(Number(e.target.value));
+          }}
+          className="clay-input"
+          style={{ width: '100%', padding: '10px 12px', fontSize: '0.85rem', borderRadius: '12px', marginBottom: '12px' }}
+        >
+          {RPM_PRESETS.map(p => (
+            <option key={p.value} value={p.value}>
+              {p.label} — ${p.value.toFixed(2)} RPM
+            </option>
+          ))}
+          <option value="custom">Custom…</option>
+        </select>
+
+        <label htmlFor="rpm-custom" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
+          Or set exact Net RPM ($ per 1,000 views)
+        </label>
+        <input
+          id="rpm-custom"
+          type="number"
+          min="0"
+          step="0.1"
+          value={assumedRpm}
+          onChange={(e) => handleRpmChange(Math.max(0, Number(e.target.value)))}
+          className="clay-input"
+          style={{ width: '100%', padding: '10px 12px', fontSize: '0.85rem', borderRadius: '12px' }}
+        />
+        <p style={{ fontSize: '0.7rem', color: '#22C55E', margin: '10px 0 0 0', fontWeight: 600 }}>
+          Example: a 1,000,000-view video ≈ ${((1_000_000 / 1000) * assumedRpm).toLocaleString()} estimated.
+        </p>
       </div>
 
       {/* Data Scrapers Section */}
