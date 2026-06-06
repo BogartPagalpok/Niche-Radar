@@ -7,6 +7,8 @@ import {
   BookMarked,
   Zap,
   ChevronRight,
+  FileText,
+  LogOut,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -17,11 +19,13 @@ export type ActiveView =
   | 'keyword-clusters'
   | 'competitor-scout'
   | 'saved-niches'
+  | 'generated-analyses'
   | 'settings';
 
 interface SidebarProps {
   activeView: ActiveView;
   onNavigate: (view: ActiveView) => void;
+  onLogout?: () => void;
 }
 
 interface NavSection {
@@ -44,6 +48,7 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'keyword-clusters', icon: Layers, label: 'Keyword Clusters' },
       { id: 'competitor-scout', icon: Zap, label: 'Competitor Scout' },
       { id: 'saved-niches', icon: BookMarked, label: 'Saved Niches' },
+      { id: 'generated-analyses', icon: FileText, label: 'Generated Analyses' },
     ],
   },
   {
@@ -59,7 +64,7 @@ const ITEM_MAP = NAV_SECTIONS.flatMap(s => s.items).reduce((acc, item) => {
   return acc;
 }, {} as Record<ActiveView, (typeof NAV_SECTIONS)[0]['items'][0]>);
 
-export default function Sidebar({ activeView, onNavigate }: SidebarProps): React.ReactElement {
+export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarProps): React.ReactElement {
   const { isDark, toggleTheme } = useTheme();
 
   return (
@@ -469,6 +474,30 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
               )}
             </div>
           </div>
+
+          {/* Logout */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center justify-center gap-2"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                marginBottom: '8px',
+                borderRadius: '12px',
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              title="Log out (your API keys & settings are kept)"
+            >
+              <LogOut size={13} strokeWidth={2.5} />
+              Log out
+            </button>
+          )}
 
           {/* Credits */}
           <div style={{ textAlign: 'center', marginTop: '4px' }}>
