@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { fetchYouTubeMetrics, isMetricsError } from '../services/metricsService';
 import { generateScriptPrompt, generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
@@ -115,7 +115,7 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
             <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '12px', textTransform: 'uppercase' }}>
               1. Performance Metrics
             </h2>
-            <PrivateMetrics videoId={video.video_id} />
+            <PrivateMetrics videoId={video.video_id} viewCountText={video.view_count} />
           </section>
 
           <div style={{ height: '1px', background: 'var(--border-subtle)', borderRadius: '999px', opacity: 0.4 }} />
