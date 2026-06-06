@@ -22,51 +22,6 @@ const DATE_OPTIONS = [
   { label: 'This year', value: 365 },
 ];
 
-// Skeleton placeholder shown while the first page of results loads.
-function SkeletonCard(): React.ReactElement {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '12px',
-        padding: '10px',
-        borderRadius: 'var(--radius-md)',
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-subtle)',
-      }}
-    >
-      <div
-        style={{
-          width: '120px',
-          height: '68px',
-          borderRadius: '10px',
-          flexShrink: 0,
-          background:
-            'linear-gradient(90deg, var(--bg-panel) 25%, rgba(125,125,125,0.12) 37%, var(--bg-panel) 63%)',
-          backgroundSize: '400% 100%',
-          animation: 'shimmer 1.4s ease infinite',
-        }}
-      />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
-        {[ '90%', '60%', '40%' ].map((w, i) => (
-          <div
-            key={i}
-            style={{
-              height: '10px',
-              width: w,
-              borderRadius: '6px',
-              background:
-                'linear-gradient(90deg, var(--bg-panel) 25%, rgba(125,125,125,0.12) 37%, var(--bg-panel) 63%)',
-              backgroundSize: '400% 100%',
-              animation: 'shimmer 1.4s ease infinite',
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 interface SearchState {
   query: string;
   videos: ExtractedVideo[];
@@ -448,48 +403,6 @@ export default function NicheSearch(): React.ReactElement {
                 Enter keywords, topics, or channel names
               </p>
             </div>
-          </div>
-        )}
-
-        {/* Initial loading skeletons */}
-        {state.isLoading && state.videos.length === 0 && (
-          <>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <SkeletonCard key={`sk-${i}`} />
-            ))}
-          </>
-        )}
-
-        {/* No results after a search / over-restrictive filters */}
-        {state.hasSearched && !state.isLoading && state.videos.length === 0 && !state.error && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 1,
-              gap: '8px',
-              paddingBottom: '40px',
-              textAlign: 'center',
-            }}
-          >
-            <Search size={28} strokeWidth={1.5} color="var(--text-tertiary)" />
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 600, margin: 0 }}>
-              No videos match your filters
-            </p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: 0, maxWidth: '260px', lineHeight: 1.5 }}>
-              Try lowering the “Views” filter, widening the date range, or using a broader search term.
-            </p>
-            {(state.minViews > 0 || state.withinDays > 0) && (
-              <button
-                onClick={() => applyFilters(0, 0)}
-                className="clay-btn-secondary"
-                style={{ fontSize: '0.72rem', fontWeight: 700, padding: '6px 14px', marginTop: '4px', borderRadius: '999px' }}
-              >
-                Clear filters
-              </button>
-            )}
           </div>
         )}
 
