@@ -113,6 +113,38 @@ export async function getValidToken(): Promise<string | null> {
   return refreshPromise;
 }
 
+/**
+ * Force a brand-new token, ignoring any cached/valid one.
+ * - If signed in via Supabase, refreshes the Supabase session.
+ * - Otherwise clears expiry and runs the server-side refresh.
+ * Returns { token, source } so the UI can report what happened.
+ */
+export async function forceRefreshToken(): Promise<{ token: string | null; source: string }> {
+  // 1. Supabase session path
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (!error && data.session?.provider_token) {
+      return { token: data.session.provider_token, source: 'Supabase (Google) session refreshed' };
+    }
+    if (session.provider_token) {
+      return { token: session.provider_token, source: 'Supabase session (existing token)' };
+    }
+  }
+
+  // 2. Manual refresh-token path — clear expiry to FORCE a new access token.
+  localStorage.removeItem(STORAGE_KEY_TOKEN_EXPIRY);
+  const refreshToken = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN);
+  if (!refreshToken) {
+    return { token: null, source: 'No Google session or refresh token found. Sign in with Google, or add a Refresh Token in Settings.' };
+  }
+  const token = await doRefresh();
+  return {
+    token,
+    source: token ? 'Refresh token exchanged via /api/refresh-token' : 'Refresh failed (check server GOOGLE_CLIENT_ID/SECRET env vars).',
+  };
+}
+
 /** Called after a successful Google OAuth flow to store all tokens. */
 export function saveCredentials(accessToken: string, refreshToken?: string, expiresIn?: number): void {
   persistAccessToken(accessToken, expiresIn ?? 3600);
