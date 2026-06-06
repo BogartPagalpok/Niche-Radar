@@ -1,4 +1,5 @@
 import { type ExtractedVideo } from './youtubeScraper';
+import { generateText } from './aiProviders';
 
 export interface GeminiScriptResponse {
   script: string;
@@ -13,44 +14,7 @@ export interface GeneratorError {
   message: string;
 }
 
-function getStoredGeminiKey(): string | null {
-  return localStorage.getItem('niche-radar-gemini-key');
-}
-
-// Gemini's free tier frequently returns 503 (overloaded). Retry a few times
-// with exponential backoff before giving up.
-async function fetchWithRetry(
-  url: string,
-  init: RequestInit,
-  retries = 3,
-): Promise<Response> {
-  let lastResponse: Response | null = null;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const response = await fetch(url, init);
-    // 503/500/429 are transient — wait and retry.
-    if (response.ok || ![500, 502, 503, 429].includes(response.status)) {
-      return response;
-    }
-    lastResponse = response;
-    if (attempt < retries) {
-      const delay = 600 * Math.pow(2, attempt) + Math.random() * 300; // 0.6s, 1.2s, 2.4s
-      console.warn(`[Gemini] ${response.status} — retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${retries})`);
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  return lastResponse as Response;
-}
-
 export async function generateScriptPrompt(video: ExtractedVideo): Promise<GeminiScriptResponse | GeneratorError> {
-  const apiKey = getStoredGeminiKey();
-
-  if (!apiKey) {
-    return {
-      code: 'NO_GEMINI_KEY',
-      message: 'Gemini API key not configured. Please add your key in App Settings.',
-    };
-  }
-
   const userPrompt = `You are an expert YouTube scriptwriter. Analyze this successful video, extract its RETENTION BLUEPRINT (hook strategy, pacing pattern, emotional beats, information density), then write a COMPLETELY NEW original script on the SAME TOPIC using that same blueprint.
 
 DO NOT transcribe or copy the original. The original is only a reference for what retention techniques work. Create fresh, original narration that would achieve similar viewer retention and engagement.
@@ -111,112 +75,43 @@ CRITICAL INSTRUCTIONS:
 - The final output should fill a ${video.duration} video.
 - Do not cut off mid-sentence. Complete every thought fully.`;
 
-  try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  const result = await generateText({
+    prompt: userPrompt,
+    temperature: 0.7,
+    maxTokens: 8192,
+    task: 'script',
+  });
 
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            {
-              text: userPrompt,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8192,
-      },
-    };
-
-    const response = await fetchWithRetry(`${url}?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        return {
-          code: 'INVALID_GEMINI_KEY',
-          message: 'Gemini API key is invalid. Please update in App Settings.',
-        };
-      }
-      if (response.status === 429) {
-        return {
-          code: 'RATE_LIMITED',
-          message: 'Gemini API quota exceeded. Try again in a minute, or use an AI Studio key for higher limits.',
-        };
-      }
-      if (response.status === 503 || response.status === 500 || response.status === 502) {
-        return {
-          code: 'GEMINI_OVERLOADED',
-          message: 'Gemini is temporarily overloaded (503). Please click Generate again in a few seconds.',
-        };
-      }
-      return {
-        code: 'GEMINI_API_ERROR',
-        message: `Gemini API error: ${response.statusText}`,
-      };
-    }
-
-    const data: any = await response.json();
-
-    if (!data.candidates || data.candidates.length === 0) {
-      return {
-        code: 'NO_RESPONSE',
-        message: 'Gemini API returned no response.',
-      };
-    }
-
-    const scriptText = data.candidates[0]?.content?.parts?.[0]?.text || '';
-
-    if (!scriptText) {
-      return {
-        code: 'EMPTY_RESPONSE',
-        message: 'Gemini generated an empty script prompt.',
-      };
-    }
-
-    return {
-      script: scriptText,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate script prompt';
-
-    return {
-      code: 'FETCH_ERROR',
-      message: errorMessage,
-    };
+  if (!result.text) {
+    return { code: 'NO_PROVIDER', message: result.error || 'Script generation failed.' };
   }
+  return { script: result.text };
 }
 
 export interface ChannelStyleHint {
   titles?: string[];
   thumbnails?: string[];
+  /** GPT-4o vision description of the real thumbnails (most accurate signal). */
+  visionStyle?: string;
 }
 
 export async function generateThumbnailPrompt(
   video: ExtractedVideo,
   channelStyle?: ChannelStyleHint,
 ): Promise<GeminiThumbnailResponse | GeneratorError> {
-  const apiKey = getStoredGeminiKey();
-
-  if (!apiKey) {
-    return {
-      code: 'NO_GEMINI_KEY',
-      message: 'Gemini API key not configured. Please add your key in App Settings.',
-    };
-  }
-
   // Build a "channel style" block if we scraped the channel's recent videos.
   let styleBlock = '';
+
+  // Highest-priority signal: actual VISION analysis of the real thumbnails.
+  if (channelStyle?.visionStyle && channelStyle.visionStyle.trim()) {
+    styleBlock +=
+      `\n\nREAL THUMBNAIL STYLE (from AI vision analysis of this channel's actual thumbnails — MATCH THIS CLOSELY):\n` +
+      channelStyle.visionStyle.trim();
+  }
+
   const titles = (channelStyle?.titles ?? []).filter(Boolean).slice(0, 10);
   if (titles.length > 0) {
-    styleBlock =
+    styleBlock +=
       `\n\nCHANNEL STYLE REFERENCE (match this creator's branding & tone):\n` +
       `Recent video titles from this channel:\n- ` +
       titles.join('\n- ') +
@@ -281,87 +176,17 @@ Midjourney prompt: [...] --ar 16:9 --style raw --v 6.1
 Why this works for CTR: [...]
 Best for: [...]`;
 
-  try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  const result = await generateText({
+    prompt: userPrompt,
+    temperature: 0.8,
+    maxTokens: 4096,
+    task: 'thumbnail',
+  });
 
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            {
-              text: userPrompt,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 4096,
-      },
-    };
-
-    const response = await fetchWithRetry(`${url}?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        return {
-          code: 'INVALID_GEMINI_KEY',
-          message: 'Gemini API key is invalid. Please update in App Settings.',
-        };
-      }
-      if (response.status === 429) {
-        return {
-          code: 'RATE_LIMITED',
-          message: 'Gemini API quota exceeded. Try again in a minute, or use an AI Studio key for higher limits.',
-        };
-      }
-      if (response.status === 503 || response.status === 500 || response.status === 502) {
-        return {
-          code: 'GEMINI_OVERLOADED',
-          message: 'Gemini is temporarily overloaded (503). Please click Generate again in a few seconds.',
-        };
-      }
-      return {
-        code: 'GEMINI_API_ERROR',
-        message: `Gemini API error: ${response.statusText}`,
-      };
-    }
-
-    const data: any = await response.json();
-
-    if (!data.candidates || data.candidates.length === 0) {
-      return {
-        code: 'NO_RESPONSE',
-        message: 'Gemini API returned no response.',
-      };
-    }
-
-    const promptText = data.candidates[0]?.content?.parts?.[0]?.text || '';
-
-    if (!promptText) {
-      return {
-        code: 'EMPTY_RESPONSE',
-        message: 'Gemini generated an empty thumbnail prompt.',
-      };
-    }
-
-    return {
-      prompt: promptText,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate thumbnail prompt';
-
-    return {
-      code: 'FETCH_ERROR',
-      message: errorMessage,
-    };
+  if (!result.text) {
+    return { code: 'NO_PROVIDER', message: result.error || 'Thumbnail generation failed.' };
   }
+  return { prompt: result.text };
 }
 
 export function isGeneratorError(result: GeminiScriptResponse | GeminiThumbnailResponse | GeneratorError): result is GeneratorError {
