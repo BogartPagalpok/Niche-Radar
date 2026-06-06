@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Copy, CheckCircle2, Loader2, AlertCircle, Play } from 'lucide-react';
 import { generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
+import { fetchChannelStyle } from '../services/channelStyle';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
 // This UI component is correct and requires no changes. 
@@ -38,7 +39,17 @@ export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProp
   const handleGenerateThumbnail = async (): Promise<void> => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    const result = await generateThumbnailPrompt(video);
+    // Scan the channel's recent videos so the prompt matches its style.
+    // Non-blocking: if it fails, we still generate a great generic prompt.
+    let channelStyle;
+    if (video.channel_id) {
+      const style = await fetchChannelStyle(video.channel_id);
+      if (style.titles.length > 0 || style.thumbnails.length > 0) {
+        channelStyle = { titles: style.titles, thumbnails: style.thumbnails };
+      }
+    }
+
+    const result = await generateThumbnailPrompt(video, channelStyle);
 
     if (isGeneratorError(result)) {
       setState({
