@@ -1,4 +1,6 @@
-import { getValidToken } from './credentialsService';
+// Channel stats now come from our own Cloudflare Function at /api/channel-stats.
+// This works WITHOUT Google login and has no CORS issues (server-side scrape).
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || '';
 
 export interface ChannelStats {
   subscribers: string;
@@ -10,71 +12,46 @@ export interface ChannelStats {
   error?: string;
 }
 
-export async function fetchChannelStats(channelId: string): Promise<ChannelStats> {
-  const token = await getValidToken();
+const EMPTY: Omit<ChannelStats, 'error'> = {
+  subscribers: 'N/A',
+  totalViews: 'N/A',
+  videoCount: 'N/A',
+  channelTitle: 'N/A',
+  thumbnail: '',
+  country: 'N/A',
+};
 
-  if (!token) {
-    return {
-      subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A',
-      channelTitle: 'N/A', thumbnail: '', country: 'N/A',
-      error: 'Google token not available. Check credentials in App Settings.',
-    };
+export async function fetchChannelStats(channelId: string): Promise<ChannelStats> {
+  if (!channelId) {
+    return { ...EMPTY, error: 'No channel ID available for this video.' };
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    const res = await fetch(
+      `${API_BASE}/api/channel-stats?id=${encodeURIComponent(channelId)}`,
+      { method: 'GET', signal: AbortSignal.timeout(15000) },
     );
 
-    if (response.status === 401) {
-      localStorage.removeItem('niche-radar-token-expiry');
-      const fresh = await getValidToken();
-      if (!fresh) {
-        return {
-          subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A',
-          channelTitle: 'N/A', thumbnail: '', country: 'N/A',
-          error: 'Authentication expired. Could not refresh token.',
-        };
-      }
-      return fetchChannelStats(channelId); // retry with fresh token
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { ...EMPTY, error: body.error || `Failed (HTTP ${res.status})` };
     }
 
-    const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      return {
-        subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A',
-        channelTitle: 'N/A', thumbnail: '', country: 'N/A',
-        error: 'Channel not found',
-      };
-    }
-
-    const channel = data.items[0];
-    const stats = channel.statistics;
-    const snippet = channel.snippet;
+    const data = (await res.json()) as ChannelStats & { error?: string };
+    if (data.error) return { ...EMPTY, error: data.error };
 
     return {
-      subscribers: formatNumber(stats.subscriberCount),
-      totalViews: formatNumber(stats.viewCount),
-      videoCount: formatNumber(stats.videoCount),
-      channelTitle: snippet.title,
-      thumbnail: snippet.thumbnails?.default?.url || '',
-      country: snippet.country || 'N/A',
+      subscribers: data.subscribers || 'N/A',
+      totalViews: data.totalViews || 'N/A',
+      videoCount: data.videoCount || 'N/A',
+      channelTitle: data.channelTitle || 'N/A',
+      thumbnail: data.thumbnail || '',
+      country: data.country || 'N/A',
     };
   } catch (error) {
     return {
-      subscribers: 'N/A', totalViews: 'N/A', videoCount: 'N/A',
-      channelTitle: 'N/A', thumbnail: '', country: 'N/A',
-      error: error instanceof Error ? error.message : 'Failed',
+      ...EMPTY,
+      error: error instanceof Error ? error.message : 'Failed to load channel stats',
     };
   }
-}
-
-function formatNumber(num: string | undefined): string {
-  if (!num) return 'N/A';
-  const n = parseInt(num);
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return n.toLocaleString();
 }
