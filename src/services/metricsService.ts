@@ -13,6 +13,47 @@ export interface MetricsError {
   message: string;
 }
 
+// --- Revenue estimation (works on ANY public video, no OAuth needed) ---
+// Net RPM = revenue the creator actually keeps per 1,000 views, after YouTube's
+// ~45% cut. Typical niches range $0.50 (gaming) to $8+ (finance). 2.0 is a
+// reasonable default; the user can override it in Settings.
+const STORAGE_KEY_RPM = 'niche-radar-assumed-rpm';
+const DEFAULT_NET_RPM = 2.0;
+
+function getAssumedRpm(): number {
+  const raw = localStorage.getItem(STORAGE_KEY_RPM);
+  const n = raw ? parseFloat(raw) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_NET_RPM;
+}
+
+/**
+ * Estimate earnings from a public view count.
+ * No credentials required — uses an assumed Net RPM.
+ */
+export function estimateRevenueFromViews(views: number): YouTubeMetrics {
+  const netRpm = getAssumedRpm();
+  const estimatedRevenue = (views / 1000) * netRpm;
+  return {
+    views,
+    estimatedRevenue,
+    cpm: netRpm / (1 - 0.45), // rough gross CPM back-calc from net
+    cardClickThroughRate: 0,  // unknown for public videos
+    netRpm,
+  };
+}
+
+/** Parse YouTube view-count strings like "1.2M", "890K", "2,500" into a number. */
+export function parseViewCount(raw: string | number): number {
+  if (typeof raw === 'number') return raw;
+  if (!raw) return 0;
+  const s = String(raw).trim().toUpperCase().replace(/,/g, '');
+  const m = s.match(/([\d.]+)\s*([KMB])?/);
+  if (!m) return 0;
+  const num = parseFloat(m[1]);
+  const mult = m[2] === 'B' ? 1e9 : m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : 1;
+  return Math.round(num * mult);
+}
+
 export async function fetchYouTubeMetrics(videoId: string): Promise<YouTubeMetrics | MetricsError> {
   const { channelId } = getCredentials();
 
