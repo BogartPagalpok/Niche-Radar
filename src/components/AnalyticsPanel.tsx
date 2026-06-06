@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 import { fetchYouTubeMetrics, isMetricsError } from '../services/metricsService';
 import { generateScriptPrompt, generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
-import { fetchChannelStyle } from '../services/channelStyle';
 import { PrivateMetrics } from './PrivateMetrics';
 import { ScriptPromptGenerator } from './ScriptPromptGenerator';
 import { ThumbnailPromptGenerator } from './ThumbnailPromptGenerator';
@@ -34,16 +33,7 @@ export function AnalyticsPanel({ video }: AnalyticsPanelProps): React.ReactEleme
     const scriptResult = await generateScriptPrompt(video);
     const scriptPrompt = !isGeneratorError(scriptResult) ? scriptResult.script : '';
 
-    // Scan channel style for a more on-brand thumbnail prompt.
-    let channelStyle;
-    if (video.channel_id) {
-      const style = await fetchChannelStyle(video.channel_id);
-      if (style.titles.length > 0 || style.thumbnails.length > 0) {
-        channelStyle = { titles: style.titles, thumbnails: style.thumbnails };
-      }
-    }
-
-    const thumbnailResult = await generateThumbnailPrompt(video, channelStyle);
+    const thumbnailResult = await generateThumbnailPrompt(video);
     const thumbnailPrompt = !isGeneratorError(thumbnailResult) ? thumbnailResult.prompt : '';
 
     // Commit data structurally to our global persistent local folder storage path
