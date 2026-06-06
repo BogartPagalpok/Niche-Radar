@@ -1,4 +1,4 @@
-import { Layers, Hash, TrendingUp, ChevronRight, Plus, Loader2, Search, AlertCircle } from 'lucide-react';
+import { Layers, Hash, TrendingUp, ChevronRight, Search, AlertCircle } from 'lucide-react';
 import { useVideoContext } from '../context/VideoContext';
 import { useState, useMemo } from 'react';
 
@@ -54,16 +54,6 @@ function extractPhrases(text: string): string[] {
   }
   
   return phrases;
-}
-
-interface ClusterData {
-  id: number;
-  name: string;
-  count: number;
-  keywords: string[];
-  color: string;
-  competition: number;
-  volume: string;
 }
 
 export default function KeywordClusters() {
