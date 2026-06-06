@@ -1,15 +1,8 @@
 // Cloudflare Pages Function — runs server-side on Cloudflare's edge.
 // URL: /api/apify-enrich
 //
-// Why this exists: Apify's API (when called directly from the browser with token in query string)
-// triggers CORS preflight failures on https://niche-radar.pages.dev (and most browser origins).
-// This Function runs on the server, performs the full Apify actor run + polling + dataset fetch,
-// and returns the scraped data to the browser — no CORS issues for the external Apify call.
-//
-// POST /api/apify-enrich
-// Body: { videoId: string, apifyKey: string, actorId?: string }
-//
-// Returns: the scraped video item (or error)
+// Accepts: { videoId, apifyKey, actorId? }
+// Returns clean scraped data or error. No CORS issues for the browser.
 
 interface Env {}
 
@@ -25,7 +18,6 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-// Handle CORS preflight
 export const onRequestOptions: PagesFunction<Env> = async () =>
   new Response(null, {
     headers: {
@@ -49,13 +41,12 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     return json({ error: 'videoId and apifyKey are required' }, 400);
   }
 
-  // Use requested actor or the popular default
+  // Use the actor the user actually has access to (from their Apify Console)
   const actorId = requestedActor || 'streamers/youtube-scraper';
 
   console.log(`[Apify Proxy] Starting for video ${videoId} on actor ${actorId}`);
 
   try {
-    // 1. Start the run
     const runUrl = `https://api.apify.com/v2/acts/${actorId}/runs?token=${apifyKey}`;
     const runResponse = await fetch(runUrl, {
       method: 'POST',
@@ -83,9 +74,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
       return json({ data: runData.data || runData });
     }
 
-    // 2. Poll for completion (server-side, no browser timeout pressure)
+    // Poll (up to ~24s)
     let finalStatus = 'RUNNING';
-    for (let attempt = 0; attempt < 12; attempt++) {  // up to ~24s
+    for (let attempt = 0; attempt < 12; attempt++) {
       await new Promise(r => setTimeout(r, 2000));
 
       const statusRes = await fetch(
@@ -103,7 +94,6 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
       }
     }
 
-    // 3. If succeeded, fetch dataset items
     if (finalStatus === 'SUCCEEDED' && datasetId) {
       const itemsUrl = `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyKey}&limit=1&clean=true&format=json`;
       const itemsRes = await fetch(itemsUrl);
@@ -111,7 +101,22 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
         const items = await itemsRes.json();
         if (Array.isArray(items) && items.length > 0) {
           console.log(`[Apify Proxy] ✅ Dataset item retrieved for ${videoId}`);
-          return json({ data: items[0], source: 'apify-proxy', runId, status: finalStatus });
+          const item = items[0];
+          // Return clean, useful structure for the app
+          return json({
+            data: {
+              title: item.title,
+              description: item.description,
+              viewCount: item.viewCount,
+              likeCount: item.likes,
+              channelName: item.channelName,
+              transcript: item.transcript || null,
+              ...item, // include everything else
+            },
+            source: 'apify-proxy',
+            runId,
+            status: finalStatus,
+          });
         }
       }
     }
