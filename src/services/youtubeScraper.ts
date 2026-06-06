@@ -15,377 +15,55 @@ export interface SearchResult {
   continuation: string | null;
 }
 
-interface YouTubeVideoRenderer {
-  videoId: string;
-  title?: {
-    runs?: Array<{
-      text: string;
-    }>;
-  };
-  viewCountText?: {
-    simpleText?: string;
-    runs?: Array<{
-      text: string;
-    }>;
-  };
-  publishedTimeText?: {
-    simpleText?: string;
-  };
-  descriptionSnippet?: {
-    runs?: Array<{
-      text: string;
-    }>;
-  };
-  lengthText?: {
-    simpleText?: string;
-  };
-  thumbnail?: {
-    thumbnails?: Array<{
-      url: string;
-      width: number;
-      height: number;
-    }>;
-  };
-  longBylineText?: {
-    simpleText?: string;
-    runs?: Array<{
-      text: string;
-    }>;
-  };
-  channelId?: string;
-}
+// All scraping now happens server-side in the Cloudflare Pages Function at
+// /api/youtube-search. The browser just calls our own same-origin endpoint,
+// so there is NO CORS issue and NO dependency on flaky public proxies.
+//
+// In local dev (vite alone) /api/* won't exist — run the app with
+//   npx wrangler pages dev -- npm run dev
+// (or build + `wrangler pages dev dist`) so the Function is served too,
+// OR set VITE_API_BASE to your deployed *.pages.dev origin in a .env file.
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || '';
 
-interface YouTubeInitialData {
-  contents?: {
-    twoColumnSearchResultsRenderer?: {
-      primaryContents?: {
-        sectionListRenderer?: {
-          contents?: Array<{
-            itemSectionRenderer?: {
-              contents?: Array<{
-                videoRenderer?: YouTubeVideoRenderer;
-              }>;
-            };
-          }>;
-          continuations?: Array<{
-            nextContinuationData?: {
-              continuation?: string;
-            };
-          }>;
-        };
-      };
-    };
-  };
-  onResponseReceivedCommands?: Array<{
-    appendContinuationItemsAction?: {
-      continuationItems?: Array<{
-        videoRenderer?: YouTubeVideoRenderer;
-        continuationItemRenderer?: {
-          continuationEndpoint?: {
-            continuationCommand?: {
-              token?: string;
-            };
-          };
-        };
-      }>;
-    };
-  }>;
-}
-
-function extractViewCount(viewCountText: string | undefined): string {
-  if (!viewCountText) return '0';
-
-  const match = viewCountText.match(/[\d.,]+/);
-  if (match) {
-    return match[0];
-  }
-
-  return '0';
-}
-
-function parseDuration(durationText: string | undefined): string {
-  if (!durationText) return '0:00';
-
-  const timePattern = /(\d+):(\d+):(\d+)|(\d+):(\d+)/;
-  const match = durationText.match(timePattern);
-
-  if (match) {
-    if (match[1]) {
-      return `${match[1]}:${match[2]}:${match[3]}`;
-    } else {
-      return `${match[4]}:${match[5]}`;
-    }
-  }
-
-  return durationText;
-}
-
-function parsePublishDate(publishedTimeText: string | undefined): string {
-  if (!publishedTimeText) return 'Unknown';
-
-  const lowerText = publishedTimeText.toLowerCase();
-
-  if (lowerText.includes('just now') || lowerText.includes('now')) return 'just now';
-  if (lowerText.includes('second')) return lowerText.split(' ')[0] + 's ago';
-  if (lowerText.includes('minute')) return lowerText.split(' ')[0] + 'm ago';
-  if (lowerText.includes('hour')) return lowerText.split(' ')[0] + 'h ago';
-  if (lowerText.includes('day')) return lowerText.split(' ')[0] + 'd ago';
-  if (lowerText.includes('week')) return lowerText.split(' ')[0] + 'w ago';
-  if (lowerText.includes('month')) return lowerText.split(' ')[0] + 'mo ago';
-  if (lowerText.includes('year')) return lowerText.split(' ')[0] + 'y ago';
-
-  return publishedTimeText;
-}
-
-function getThumbnailUrl(thumbnails: Array<{ url: string; width: number; height: number }> | undefined): string {
-  if (!thumbnails || thumbnails.length === 0) return '';
-
-  const highestQuality = thumbnails.reduce((prev, current) => {
-    const prevPixels = prev.width * prev.height;
-    const currentPixels = current.width * current.height;
-    return currentPixels > prevPixels ? current : prev;
-  });
-
-  return highestQuality.url;
-}
-
-function getTextFromRuns(runs: Array<{ text: string }> | undefined): string {
-  if (!runs || !Array.isArray(runs)) return '';
-  return runs.map((run: { text: string }) => run.text).join('');
-}
-
-function extractVideoFromRenderer(renderer: YouTubeVideoRenderer): ExtractedVideo | null {
+export async function searchYouTubeVideos(
+  query: string,
+  continuation: string | null = null,
+): Promise<SearchResult> {
   try {
-    const videoId = renderer.videoId;
-    if (!videoId) return null;
-
-    const title = getTextFromRuns(renderer.title?.runs) || 'Untitled';
-
-    let viewCountText = '';
-    if (renderer.viewCountText?.simpleText) {
-      viewCountText = renderer.viewCountText.simpleText;
-    } else if (renderer.viewCountText?.runs) {
-      viewCountText = getTextFromRuns(renderer.viewCountText.runs);
-    }
-    const viewCount = extractViewCount(viewCountText);
-
-    const description = getTextFromRuns(renderer.descriptionSnippet?.runs) || '';
-
-    const durationText = renderer.lengthText?.simpleText;
-    const duration = parseDuration(durationText);
-
-    const publishedTimeText = renderer.publishedTimeText?.simpleText || '';
-    const uploadDate = parsePublishDate(publishedTimeText);
-
-    const thumbnailUrl = getThumbnailUrl(renderer.thumbnail?.thumbnails);
-
-    let channelName = '';
-    if (renderer.longBylineText?.simpleText) {
-      channelName = renderer.longBylineText.simpleText;
-    } else if (renderer.longBylineText?.runs) {
-      channelName = getTextFromRuns(renderer.longBylineText.runs);
-    }
-
-    const channelId = renderer.channelId || '';
-
-    return {
-      video_id: videoId,
-      title: title,
-      view_count: viewCount,
-      description: description,
-      duration: duration,
-      upload_date: uploadDate,
-      thumbnail_url: thumbnailUrl,
-      channel_name: channelName,
-      channel_id: channelId,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function extractVideosFromInitialData(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
-  const videos: ExtractedVideo[] = [];
-  let continuation: string | null = null;
-
-  try {
-    const primaryContents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer;
-
-    if (primaryContents?.contents) {
-      for (const section of primaryContents.contents) {
-        if (section.itemSectionRenderer?.contents) {
-          for (const item of section.itemSectionRenderer.contents) {
-            if (item.videoRenderer) {
-              const extracted = extractVideoFromRenderer(item.videoRenderer);
-              if (extracted) {
-                videos.push(extracted);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (primaryContents?.continuations) {
-      continuation = primaryContents.continuations[0]?.nextContinuationData?.continuation || null;
-    }
-  } catch {
-    // Continue with any videos already extracted
-  }
-
-  return { videos, continuation };
-}
-
-function extractVideosFromContinuation(data: YouTubeInitialData): { videos: ExtractedVideo[]; continuation: string | null } {
-  const videos: ExtractedVideo[] = [];
-  let continuation: string | null = null;
-
-  try {
-    if (data.onResponseReceivedCommands) {
-      for (const command of data.onResponseReceivedCommands) {
-        if (command.appendContinuationItemsAction?.continuationItems) {
-          for (const item of command.appendContinuationItemsAction.continuationItems) {
-            if (item.videoRenderer) {
-              const extracted = extractVideoFromRenderer(item.videoRenderer);
-              if (extracted) {
-                videos.push(extracted);
-              }
-            } else if (item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token) {
-              continuation = item.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
-            }
-          }
-        }
-      }
-    }
-  } catch {
-    // Continue with any videos already extracted
-  }
-
-  return { videos, continuation };
-}
-
-async function fetchWithProxy(url: string): Promise<string> {
-  const proxyFactories = [
-    (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
-    (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-    (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
-    (target: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
-  ];
-
-  for (const createProxyUrl of proxyFactories) {
-    try {
-      const response = await fetch(createProxyUrl(url), {
-        method: 'GET',
-        signal: AbortSignal.timeout(10000),
-      });
-      if (response.ok) {
-        return await response.text();
-      }
-      console.warn(`Proxy returned ${response.status}, trying next...`);
-    } catch (error) {
-      console.warn('Proxy failed, trying next...', error);
-    }
-  }
-  throw new Error('All CORS proxies failed. Please check your network connection.');
-}
-
-export async function searchYouTubeVideos(query: string, continuation: string | null = null): Promise<SearchResult> {
-  try {
-    let htmlContent: string;
+    let response: Response;
 
     if (!continuation) {
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%3D%3D`;
-
-      htmlContent = await fetchWithProxy(searchUrl);
-
-      const match = htmlContent.match(/(?:var\s+)?ytInitialData\s*=\s*({[\s\S]*?})(;\s*<\/script>|;)/) || htmlContent.match(/ytInitialData\s*=\s*({[\s\S]*?})/);
-      if (!match || !match[1]) {
-        return {
-          videos: [],
-          continuation: null,
-        };
-      }
-
-      try {
-        const jsonStr = match[1];
-        const data: YouTubeInitialData = JSON.parse(jsonStr);
-        const result = extractVideosFromInitialData(data);
-
-        return {
-          videos: result.videos,
-          continuation: result.continuation,
-        };
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        return {
-          videos: [],
-          continuation: null,
-        };
-      }
+      // First page — GET with the query.
+      response = await fetch(
+        `${API_BASE}/api/youtube-search?q=${encodeURIComponent(query)}`,
+        { method: 'GET', signal: AbortSignal.timeout(20000) },
+      );
     } else {
-      const continuationUrl = `https://www.youtube.com/youtubei/v1/search?key=AIzaSyAO90d0o_cE2DFOXJB8jJy9Z8V5iveSx_E`;
-
-      const requestBody = {
-        context: {
-          client: {
-            clientName: 'WEB',
-            clientVersion: '2.20240101.01.00',
-          },
-        },
-        continuation: continuation,
-      };
-
-      const postProxyFactories = [
-        (target: string) => `https://ytproxy.yhanlhester.workers.dev/?url=${encodeURIComponent(target)}`,
-        (target: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-        (target: string) => `https://corsproxy.io/?${encodeURIComponent(target)}`,
-      ];
-
-      let data: any = null;
-      let success = false;
-
-      for (const createProxyUrl of postProxyFactories) {
-        try {
-          const response = await fetch(createProxyUrl(continuationUrl), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(10000),
-          });
-
-          if (response.ok) {
-            data = await response.json();
-            success = true;
-            break;
-          }
-          console.warn(`Continuation proxy failed with status ${response.status}, trying next...`);
-        } catch (err) {
-          console.warn('Continuation proxy error, trying next...', err);
-        }
-      }
-
-      if (!success || !data) {
-        return {
-          videos: [],
-          continuation: null,
-        };
-      }
-
-      const result = extractVideosFromContinuation(data);
-
-      return {
-        videos: result.videos,
-        continuation: result.continuation,
-      };
+      // Next page — POST the continuation token for infinite scroll.
+      response = await fetch(`${API_BASE}/api/youtube-search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ continuation }),
+        signal: AbortSignal.timeout(20000),
+      });
     }
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      console.error(`[YouTube] API ${response.status}:`, text);
+      return { videos: [], continuation: null };
+    }
+
+    const data = (await response.json()) as SearchResult & { error?: string };
+    if (data.error) console.warn('[YouTube] API reported:', data.error);
+
+    return {
+      videos: data.videos ?? [],
+      continuation: data.continuation ?? null,
+    };
   } catch (error) {
     console.error('YouTube search error:', error);
-    return {
-      videos: [],
-      continuation: null,
-    };
+    return { videos: [], continuation: null };
   }
 }
 
