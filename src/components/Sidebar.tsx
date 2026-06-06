@@ -6,7 +6,6 @@ import {
   BarChart3,
   BookMarked,
   Zap,
-  Youtube,
   ChevronRight,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -202,12 +201,18 @@ export default function Sidebar({ activeView, onNavigate }: SidebarProps): React
           <div
             className="flex items-center justify-center w-10 h-10 flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, #FF3333 0%, #FF0000 50%, #CC0000 100%)',
               borderRadius: '12px',
               boxShadow: 'var(--shadow-red)',
+              overflow: 'hidden',
             }}
           >
-            <Youtube size={20} strokeWidth={2} color="#FFFFFF" />
+            <img
+              src="/logo.png"
+              alt="Niche Radar logo"
+              width={40}
+              height={40}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
           </div>
           <div style={{ minWidth: 0 }}>
             <p
