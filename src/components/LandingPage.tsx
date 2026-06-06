@@ -1,7 +1,8 @@
+================== FILE 3: src/components/LandingPage.tsx ==================
 import { Youtube, TrendingUp, Search, Zap, Layers, ArrowRight, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface LandingPageProps {
   onEnterApp: () => void;
@@ -15,28 +16,47 @@ export default function LandingPage({ onEnterApp }: LandingPageProps): React.Rea
 
   const handleGoogleLogin = async () => {
     setLoginError(null);
+
+    // Guard: if Supabase env vars are missing, login can never work.
+    if (!isSupabaseConfigured) {
+      setLoginError(
+        'Login is not configured. The site is missing Supabase environment ' +
+          'variables (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). Add them in ' +
+          'Cloudflare Pages → Settings → Environment variables, then redeploy.',
+      );
+      return;
+    }
+
     setIsLoggingIn(true);
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        scopes: [
-          'https://www.googleapis.com/auth/youtube.readonly',
-          'https://www.googleapis.com/auth/yt-analytics.readonly',
-        ].join(' '),
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'select_account consent',
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: [
+            'https://www.googleapis.com/auth/youtube.readonly',
+            'https://www.googleapis.com/auth/yt-analytics.readonly',
+          ].join(' '),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account consent',
+          },
+          redirectTo: window.location.origin,
         },
-        redirectTo: window.location.origin,
-      },
-    });
+      });
 
-    if (error) {
+      if (error) {
+        setIsLoggingIn(false);
+        setLoginError(error.message);
+        console.error('[Login] Google OAuth error:', error);
+      }
+      // On success the browser redirects — no further handling needed here
+    } catch (e) {
       setIsLoggingIn(false);
-      setLoginError(error.message);
+      const msg = e instanceof Error ? e.message : 'Unknown login error';
+      setLoginError(`Login failed: ${msg}`);
+      console.error('[Login] Threw:', e);
     }
-    // On success the browser redirects — no further handling needed here
   };
 
   return (
