@@ -1,4 +1,3 @@
-================== FILE 3: src/components/LandingPage.tsx ==================
 import { Youtube, TrendingUp, Search, Zap, Layers, ArrowRight, Loader2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
