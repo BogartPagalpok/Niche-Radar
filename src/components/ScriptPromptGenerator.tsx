@@ -128,10 +128,10 @@ export function ScriptPromptGenerator({ video }: ScriptPromptGeneratorProps): Re
           }}
         >
           <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            Script Breakdown Token Locked
+            Grounded Replication Blueprint
           </p>
           <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-tertiary)', maxWidth: '280px', lineHeight: 1.4 }}>
-            Click below to transmit this video's metadata structure to Gemini 2.5 and synthesize an AI replication script payload.
+            Analyzes the actual video data + retention patterns, then produces a high-fidelity, actionable blueprint (much less hallucination, far more useful).
           </p>
           <button
             onClick={handleGenerateScript}
@@ -139,7 +139,7 @@ export function ScriptPromptGenerator({ video }: ScriptPromptGeneratorProps): Re
             style={{ fontSize: '0.72rem', fontWeight: 700, marginTop: '2px' }}
           >
             <Play size={10} strokeWidth={3} fill="currentColor" />
-            Generate Script Blueprint
+            Generate Grounded Blueprint
           </button>
         </div>
       )}
