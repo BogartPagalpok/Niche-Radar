@@ -128,6 +128,14 @@ function extractVideo(v: any): ExtractedVideo | null {
     const viewMatch = viewText.match(/[\d.,]+/);
     const channel =
       v.longBylineText?.simpleText || runs(v.longBylineText?.runs) || '';
+    // The channel ID lives in a nested navigationEndpoint, NOT a top-level field.
+    const channelId =
+      v.longBylineText?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId ||
+      v.ownerText?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId ||
+      v.channelThumbnailSupportedRenderers?.channelThumbnailWithLinkRenderer
+        ?.navigationEndpoint?.browseEndpoint?.browseId ||
+      v.channelId ||
+      '';
     const thumbs = v.thumbnail?.thumbnails || [];
     const bestThumb = thumbs.length
       ? thumbs.reduce((a: any, b: any) =>
@@ -143,7 +151,7 @@ function extractVideo(v: any): ExtractedVideo | null {
       upload_date: v.publishedTimeText?.simpleText || 'Unknown',
       thumbnail_url: bestThumb,
       channel_name: channel,
-      channel_id: v.channelId || '',
+      channel_id: channelId,
     };
   } catch {
     return null;
