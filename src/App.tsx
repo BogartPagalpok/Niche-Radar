@@ -12,6 +12,7 @@ import TrendAnalysis from './components/TrendAnalysis';
 import KeywordClusters from './components/KeywordClusters';
 import CompetitorScout from './components/CompetitorScout';
 import SavedNiches from './components/SavedNiches';
+import GeneratedAnalyses from './components/GeneratedAnalyses';
 import AppSettings from './components/AppSettings';
 import { VideoDetailView } from './components/VideoDetailView';
 import { X } from 'lucide-react';
@@ -109,6 +110,25 @@ function AppShell(): React.ReactElement {
     setSession(null); // treat null as "sandbox, no auth" — still shows app
   };
 
+  const handleLogout = async () => {
+    // Sign out of Supabase if a session exists.
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* ignore */
+    }
+    // Return to the landing page WITHOUT wiping API keys / settings.
+    // We only clear the "seen landing" flag + the active Google access token,
+    // and intentionally KEEP: gemini/cerebras/groq/github keys, client id/secret,
+    // refresh token, channel id, RPM, saved niches, and analysis folder.
+    localStorage.removeItem('niche-radar-landing-seen');
+    localStorage.removeItem('niche-radar-google-token');
+    localStorage.removeItem('niche-radar-token-expiry');
+    setSession(null);
+    // Force the landing page to show again.
+    window.location.reload();
+  };
+
   const renderLeftContent = (): React.ReactElement => {
     switch (activeView) {
       case 'dashboard':      return <Dashboard />;
@@ -117,6 +137,7 @@ function AppShell(): React.ReactElement {
       case 'keyword-clusters': return <KeywordClusters />;
       case 'competitor-scout': return <CompetitorScout videos={searchedVideos} onSelectVideo={handleSelectVideo} />;
       case 'saved-niches':   return <SavedNiches />;
+      case 'generated-analyses': return <GeneratedAnalyses />;
       case 'settings':       return <AppSettings />;
       default:               return <Dashboard />;
     }
@@ -141,13 +162,13 @@ function AppShell(): React.ReactElement {
     <div className="flex flex-col lg:flex-row min-h-screen w-full overflow-hidden" style={{ background: isDark ? '#070707' : '#EAEAEA' }}>
       {/* Mobile nav */}
       <div className="lg:hidden fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-5">
-        <Sidebar activeView={activeView} onNavigate={setActiveView} />
+        <Sidebar activeView={activeView} onNavigate={setActiveView} onLogout={handleLogout} />
       </div>
 
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:sticky lg:top-0 lg:w-64 lg:h-screen lg:flex-col p-4 lg:p-6 lg:pr-0 box-border flex-shrink-0">
         <div className="w-full h-full rounded-2xl lg:rounded-3xl overflow-hidden lg:shadow-xl" style={{ background: 'var(--bg-panel)', boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.05)' }}>
-          <Sidebar activeView={activeView} onNavigate={setActiveView} />
+          <Sidebar activeView={activeView} onNavigate={setActiveView} onLogout={handleLogout} />
         </div>
       </div>
 
