@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, DollarSign, MousePointer2, AlertCircle, Loader2, WifiOff } from 'lucide-react';
-import { fetchYouTubeMetrics, isMetricsError, type YouTubeMetrics } from '../services/metricsService';
+import {
+  fetchYouTubeMetrics,
+  isMetricsError,
+  estimateRevenueFromViews,
+  parseViewCount,
+  type YouTubeMetrics,
+} from '../services/metricsService';
 import { hasRequiredCredentials } from '../services/credentialsService';
 
 interface PrivateMetricsProps {
   videoId: string;
+  /** Public view-count string from the scraped video (e.g. "1.2M"). */
+  viewCountText?: string;
 }
 
 interface MetricsState {
@@ -13,7 +21,7 @@ interface MetricsState {
   error: string | null;
 }
 
-export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactElement {
+export function PrivateMetrics({ videoId, viewCountText }: PrivateMetricsProps): React.ReactElement {
   const [state, setState] = useState<MetricsState>({
     metrics: null,
     isLoading: false,
@@ -31,21 +39,36 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
   const handleFetchPrivateMetrics = async (): Promise<void> => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    const result = await fetchYouTubeMetrics(videoId);
+    // Always start from a view-based revenue ESTIMATE — works on any public
+    // video, no credentials required. This guarantees the button does something.
+    const views = parseViewCount(viewCountText ?? '0');
+    const estimated = estimateRevenueFromViews(views);
 
-    if (isMetricsError(result)) {
-      setState({
-        metrics: null,
-        isLoading: false,
-        error: result.message,
-      });
-    } else {
-      setState({
-        metrics: result,
-        isLoading: false,
-        error: null,
-      });
+    // If the user has connected their own Google/YouTube credentials, try to
+    // enrich the estimate with REAL private analytics (views + CTR).
+    if (hasRequiredCredentials()) {
+      const result = await fetchYouTubeMetrics(videoId);
+      if (!isMetricsError(result)) {
+        // Use the real view count to recompute revenue, and keep the real CTR.
+        const realViews = result.views || estimated.views;
+        setState({
+          metrics: {
+            ...estimateRevenueFromViews(realViews),
+            cardClickThroughRate: result.cardClickThroughRate,
+          },
+          isLoading: false,
+          error: null,
+        });
+        return;
+      }
     }
+
+    // No credentials: just show the estimate.
+    setState({
+      metrics: estimated,
+      isLoading: false,
+      error: null,
+    });
   };
 
   if (state.isLoading) {
@@ -124,6 +147,7 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
 
   if (!state.metrics) {
     const hasCredentials = hasRequiredCredentials();
+    void hasCredentials;
 
     return (
       <div
@@ -141,20 +165,19 @@ export function PrivateMetrics({ videoId }: PrivateMetricsProps): React.ReactEle
         }}
       >
         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          {hasCredentials ? 'Analytics Available' : 'Analytics Offline'}
+          Estimated Earnings
         </p>
         <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-tertiary)', maxWidth: '280px', lineHeight: 1.4 }}>
           {hasCredentials
-            ? 'Click below to fetch real-time analytics for this video from YouTube'
-            : 'Configure your Google API token and YouTube Channel ID in Settings to view real analytics'}
+            ? 'Click to estimate revenue from public views and enrich it with your real YouTube analytics.'
+            : 'Click to estimate revenue from this video\u2019s public view count. Set your niche RPM in Settings for a more accurate figure.'}
         </p>
         <button
           onClick={handleFetchPrivateMetrics}
-          className={hasCredentials ? 'clay-btn-red py-2 px-5' : 'clay-btn-secondary py-2 px-5'}
+          className="clay-btn-red py-2 px-5"
           style={{ fontSize: '0.75rem', fontWeight: 700, marginTop: '2px' }}
-          disabled={!hasCredentials}
         >
-          {hasCredentials ? 'Load Analytics' : 'Configure in Settings'}
+          Estimate Earnings
         </button>
       </div>
     );
