@@ -17,6 +17,30 @@ function getStoredGeminiKey(): string | null {
   return localStorage.getItem('niche-radar-gemini-key');
 }
 
+// Gemini's free tier frequently returns 503 (overloaded). Retry a few times
+// with exponential backoff before giving up.
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  retries = 3,
+): Promise<Response> {
+  let lastResponse: Response | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await fetch(url, init);
+    // 503/500/429 are transient — wait and retry.
+    if (response.ok || ![500, 502, 503, 429].includes(response.status)) {
+      return response;
+    }
+    lastResponse = response;
+    if (attempt < retries) {
+      const delay = 600 * Math.pow(2, attempt) + Math.random() * 300; // 0.6s, 1.2s, 2.4s
+      console.warn(`[Gemini] ${response.status} — retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${retries})`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  return lastResponse as Response;
+}
+
 export async function generateScriptPrompt(video: ExtractedVideo): Promise<GeminiScriptResponse | GeneratorError> {
   const apiKey = getStoredGeminiKey();
 
@@ -106,7 +130,7 @@ CRITICAL INSTRUCTIONS:
       },
     };
 
-    const response = await fetch(`${url}?key=${apiKey}`, {
+    const response = await fetchWithRetry(`${url}?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -125,6 +149,12 @@ CRITICAL INSTRUCTIONS:
         return {
           code: 'RATE_LIMITED',
           message: 'Gemini API quota exceeded. Try again in a minute, or use an AI Studio key for higher limits.',
+        };
+      }
+      if (response.status === 503 || response.status === 500 || response.status === 502) {
+        return {
+          code: 'GEMINI_OVERLOADED',
+          message: 'Gemini is temporarily overloaded (503). Please click Generate again in a few seconds.',
         };
       }
       return {
@@ -164,7 +194,15 @@ CRITICAL INSTRUCTIONS:
   }
 }
 
-export async function generateThumbnailPrompt(video: ExtractedVideo): Promise<GeminiThumbnailResponse | GeneratorError> {
+export interface ChannelStyleHint {
+  titles?: string[];
+  thumbnails?: string[];
+}
+
+export async function generateThumbnailPrompt(
+  video: ExtractedVideo,
+  channelStyle?: ChannelStyleHint,
+): Promise<GeminiThumbnailResponse | GeneratorError> {
   const apiKey = getStoredGeminiKey();
 
   if (!apiKey) {
@@ -174,43 +212,74 @@ export async function generateThumbnailPrompt(video: ExtractedVideo): Promise<Ge
     };
   }
 
-  const userPrompt = `You are an expert YouTube thumbnail designer and AI image prompt engineer. Analyze this video's title and description, then create 3 ORIGINAL Midjourney prompts for NEW thumbnails that are HIGHLY RELEVANT to the video's specific subject matter.
+  // Build a "channel style" block if we scraped the channel's recent videos.
+  let styleBlock = '';
+  const titles = (channelStyle?.titles ?? []).filter(Boolean).slice(0, 10);
+  if (titles.length > 0) {
+    styleBlock =
+      `\n\nCHANNEL STYLE REFERENCE (match this creator's branding & tone):\n` +
+      `Recent video titles from this channel:\n- ` +
+      titles.join('\n- ') +
+      `\n\nStudy the title patterns above (capitalization, length, emoji use, numbers, ` +
+      `emotional words, punctuation). Your typography text and overall tone MUST feel ` +
+      `consistent with this channel's existing style so the new thumbnails look like they ` +
+      `belong to the same brand.`;
+  }
+
+  const userPrompt = `You are a world-class YouTube thumbnail strategist and AI image-prompt engineer who has studied thousands of high-CTR thumbnails (MrBeast, Veritasium, MKBHD style). Analyze this video, then design 3 ORIGINAL, scroll-stopping thumbnail concepts with ready-to-use Midjourney prompts that are HIGHLY SPECIFIC to this video's topic.
 
 VIDEO DATA:
 Title: ${video.title}
 Channel: ${video.channel_name}
 Views: ${video.view_count}
-Description: ${video.description}
+Description: ${video.description}${styleBlock}
+
+THUMBNAIL PSYCHOLOGY — apply these proven CTR principles to every concept:
+- CURIOSITY GAP: imply a question or "what happens next?" the viewer must click to resolve.
+- EMOTION: a clear emotional hook (shock, awe, tension, desire, transformation).
+- ONE CLEAR FOCAL POINT: a single dominant subject, not a busy scene.
+- HIGH CONTRAST & COLOR POP: bright/complementary colors against a darker or blurred background so it stands out in the feed.
+- MOBILE-FIRST: readable at tiny size; max 3-5 BIG words of text; bold heavy font with outline/glow.
+- DEPTH: foreground subject sharp, background slightly blurred (shallow depth of field) for a 3D pop.
+- RULE OF THIRDS: subject offset, leaving negative space for the text.
 
 CRITICAL RULES:
-1. NO GENERIC GAMER FACES OR CLICHÉ REACTIONS. The main subject MUST be a specific character, item, or environment directly related to the video's actual topic.
-2. YOU MUST INCLUDE TYPOGRAPHY. Put the exact text in quotes (e.g., "TEXT HERE") and describe the font style (e.g., bold glowing neon font).
+1. NO generic gamer faces or cliché reactions. The main subject MUST be a specific character, object, or environment directly tied to THIS video's actual topic.
+2. ALWAYS include typography: exact text in quotes (e.g., "TEXT HERE") + a vivid font description.
+3. Each of the 3 concepts must use a DIFFERENT strategy (e.g., one Transformation/Before-After, one Mystery/Curiosity, one Bold-Claim/Number).
+4. Midjourney prompts must be richly descriptive: subject, action/expression, lighting, color palette, mood, camera/lens, and end with the exact technical flags.
 
-OUTPUT 3 ORIGINAL THUMBNAIL CONCEPTS USING EXACTLY THIS FORMAT:
+OUTPUT EXACTLY THIS FORMAT:
 
-THUMBNAIL CONCEPT 1 - [Insert Concept Strategy here, e.g. Emotional, Comparison, Mystery]
-Main Subject: [Strictly context-relevant subject. No generic humans]
-Typography Text: ["Short punchy phrase in quotes"]
-Typography Style: [Description of the font]
-Midjourney prompt: [Main Subject description], [Background description], typography [Typography Text] in [Typography Style] --ar 16:9 --style raw --v 6.1
-Why this works for CTR: [2 sentences]
-Best for: [type of viewer]
+THUMBNAIL CONCEPT 1 - [Strategy name]
+Main Subject: [Specific, topic-relevant subject + expression/action]
+Typography Text: ["Short punchy 3-5 word phrase"]
+Typography Style: [Bold font + color + effect, e.g. heavy condensed sans-serif, bright yellow with thick black outline and subtle glow]
+Color Palette: [2-3 dominant colors that create contrast]
+Composition: [Focal placement, depth, background treatment]
+Midjourney prompt: [Detailed subject], [background], [lighting & color], [mood], shallow depth of field, dramatic studio lighting, ultra-detailed, high contrast, typography "TEXT" in [style], --ar 16:9 --style raw --v 6.1
+Why this works for CTR: [2 sentences referencing the psychology above]
+Best for: [target viewer]
 
-THUMBNAIL CONCEPT 2 - [Insert Concept Strategy here]
-Main Subject: [Strictly context-relevant subject. No generic humans]
-Typography Text: ["Short punchy phrase in quotes"]
-Typography Style: [Description of the font]
-Midjourney prompt: [Main Subject description], [Background description], typography [Typography Text] in [Typography Style] --ar 16:9 --style raw --v 6.1
-Why this works for CTR: [2 sentences]
-Best for: [type of viewer]
+THUMBNAIL CONCEPT 2 - [Different strategy]
+Main Subject: [...]
+Typography Text: ["..."]
+Typography Style: [...]
+Color Palette: [...]
+Composition: [...]
+Midjourney prompt: [...] --ar 16:9 --style raw --v 6.1
+Why this works for CTR: [...]
+Best for: [...]
 
-THUMBNAIL CONCEPT 3 - [Insert Concept Strategy here]
-Main Subject: [Strictly context-relevant subject. No generic humans]
-Typography Text: ["Short punchy phrase in quotes"]
-Typography Style: [Description of the font]
-Midjourney prompt: [Main Subject description], [Background description], typography [Typography Text] in [Typography Style] --ar 16:9 --style raw --v 6.1
-Why this works for CTR: [2 sentences]
-Best for: [type of viewer]`;
+THUMBNAIL CONCEPT 3 - [Different strategy]
+Main Subject: [...]
+Typography Text: ["..."]
+Typography Style: [...]
+Color Palette: [...]
+Composition: [...]
+Midjourney prompt: [...] --ar 16:9 --style raw --v 6.1
+Why this works for CTR: [...]
+Best for: [...]`;
 
   try {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
@@ -231,7 +300,7 @@ Best for: [type of viewer]`;
       },
     };
 
-    const response = await fetch(`${url}?key=${apiKey}`, {
+    const response = await fetchWithRetry(`${url}?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -250,6 +319,12 @@ Best for: [type of viewer]`;
         return {
           code: 'RATE_LIMITED',
           message: 'Gemini API quota exceeded. Try again in a minute, or use an AI Studio key for higher limits.',
+        };
+      }
+      if (response.status === 503 || response.status === 500 || response.status === 502) {
+        return {
+          code: 'GEMINI_OVERLOADED',
+          message: 'Gemini is temporarily overloaded (503). Please click Generate again in a few seconds.',
         };
       }
       return {
