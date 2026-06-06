@@ -39,8 +39,17 @@ const VideoContext = createContext<VideoContextValue>({
 });
 
 export function VideoProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const [selectedVideo, setSelectedVideo] = useState<ExtractedVideo | null>(null);
-  
+  // Restore the previously selected video so switching tabs / reloading does
+  // not blank out the analysis panel.
+  const [selectedVideo, setSelectedVideo] = useState<ExtractedVideo | null>(() => {
+    try {
+      const stored = localStorage.getItem('niche-radar-selected-video');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Load from localStorage on init
   const [searchedVideos, setSearchedVideosState] = useState<ExtractedVideo[]>(() => {
     try {
