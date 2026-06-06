@@ -1,4 +1,4 @@
-import { Zap, Youtube, Eye, ExternalLink, Star, Loader2, Users, BarChart3 } from 'lucide-react';
+import { Zap, Youtube, Eye, ExternalLink, Loader2, Users, BarChart3 } from 'lucide-react';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
 interface CompetitorScoutProps {
