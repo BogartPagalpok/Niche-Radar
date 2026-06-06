@@ -10,19 +10,7 @@ export interface ThumbnailVisionResult {
 }
 
 /**
- * Send the video's own thumbnail + a few channel thumbnails to GPT-4o and ask
- * it to describe the recurring VISUAL style (composition, colors, faces, text,
- * mood). The result is injected into the thumbnail-prompt generator.
- */
-export async function analyzeThumbnailStyle(
-  videoThumbnailUrl: string,
-  channelThumbnailUrls: string[] = [],
-): Promise<ThumbnailVisionResult> {
-  const token = localStorage.getItem(STORAGE_KEY_GITHUB);
-  if (!token) {
-    return { styleAnalysis: '', error: 'No GitHub (GPT-4o vision) token configured.' };
-  }
-
+ * Send the video's own thumbnail + a few channel
   // Collect up to 4 images: the source thumbnail first, then channel samples.
   const images = [videoThumbnailUrl, ...channelThumbnailUrls]
     .filter(Boolean)
