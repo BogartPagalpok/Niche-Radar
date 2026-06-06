@@ -57,31 +57,29 @@ let refreshPromise: Promise<string | null> | null = null;
 
 async function doRefresh(): Promise<string | null> {
   const refreshToken = localStorage.getItem(STORAGE_KEY_REFRESH_TOKEN);
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
-  const clientSecret = localStorage.getItem(STORAGE_KEY_CLIENT_SECRET);
 
-  if (!refreshToken || !clientId || !clientSecret) {
+  if (!refreshToken) {
     return null;
   }
 
+  // SECURITY: the client_secret is no longer used in the browser. The refresh
+  // happens server-side via the Cloudflare Function at /api/refresh-token,
+  // which holds GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET as env vars.
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE || '';
+
   try {
-    const response = await fetch('https://oauth2.googleapis.com/token', {
+    const response = await fetch(`${API_BASE}/api/refresh-token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
     const data = await response.json();
-    if (data.access_token) {
+    if (response.ok && data.access_token) {
       persistAccessToken(data.access_token, data.expires_in ?? 3600);
       return data.access_token;
     }
-    console.error('Token refresh failed:', data);
+    console.error('Token refresh failed:', data.error || data);
     return null;
   } catch (error) {
     console.error('Token refresh network error:', error);
@@ -130,7 +128,7 @@ export async function refreshGoogleToken(): Promise<{ googleToken: string | null
 }
 
 export function hasRequiredCredentials(): boolean {
-  const { accessToken, channelId } = getCredentials();
+  const { accessToken } = getCredentials();
   // channelId is optional — token alone is sufficient for most API calls
   return !!(accessToken);
 }
