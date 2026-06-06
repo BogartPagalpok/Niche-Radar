@@ -78,7 +78,6 @@ export default function TrendAnalysis() {
     if (!searchedVideos || searchedVideos.length === 0) return [];
 
     // Group by recency buckets to create real trend lines
-    const now = Date.now();
     const buckets: Record<string, { views: number; count: number; videos: ExtractedVideo[] }> = {
       'Now': { views: 0, count: 0, videos: [] },
       '1d': { views: 0, count: 0, videos: [] },
@@ -127,7 +126,7 @@ export default function TrendAnalysis() {
     return Object.entries(channelGroups)
       .sort((a, b) => b[1].views - a[1].views)
       .slice(0, 4)
-      .map(([channel, data], index) => {
+      .map(([channel, data]) => {
         // Create trend data: distribute views across recency buckets proportionally
         const dataPoints = bucketOrder.map(bucket => {
           const b = buckets[bucket];
@@ -175,7 +174,7 @@ export default function TrendAnalysis() {
         },
         consistent: {
           value: trends[1]?.niche || '—',
-          sub: `${trends[1]?.count || 0} videos in results`,
+          sub: trends[1]?.subText || '0 videos',
         },
         bestEntry: {
           value: trends[2]?.niche || '—',
