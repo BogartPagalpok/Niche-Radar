@@ -8,6 +8,20 @@ import { useTheme } from '../context/ThemeContext';
 import { expandQuery } from '../services/aiQueryExpander';
 import { processVideoResults } from '../services/rankingEngine';
 
+// Filter options shown as chips in the UI.
+const VIEW_OPTIONS = [
+  { label: 'Any views', value: 0 },
+  { label: '10K+', value: 10_000 },
+  { label: '100K+', value: 100_000 },
+  { label: '1M+', value: 1_000_000 },
+];
+const DATE_OPTIONS = [
+  { label: 'Any time', value: 0 },
+  { label: 'This week', value: 7 },
+  { label: 'This month', value: 30 },
+  { label: 'This year', value: 365 },
+];
+
 interface SearchState {
   query: string;
   videos: ExtractedVideo[];
@@ -17,6 +31,9 @@ interface SearchState {
   continuation: string | null;
   hasSearched: boolean;
   searchTarget: string; // Added to handle infinite scroll pagination safely
+  minViews: number;
+  withinDays: number;
+  rawVideos: ExtractedVideo[]; // unfiltered accumulated results, for re-filtering
 }
 
 export default function NicheSearch(): React.ReactElement {
@@ -31,6 +48,9 @@ export default function NicheSearch(): React.ReactElement {
     continuation: null,
     hasSearched: false,
     searchTarget: '',
+    minViews: 0,
+    withinDays: 0,
+    rawVideos: [],
   });
 
   const loadMoreCountRef = useRef<number>(0);
@@ -62,16 +82,26 @@ export default function NicheSearch(): React.ReactElement {
         }
 
         setState(prev => {
-          const totalVideos = isInitialSearch ? parsedVideos : [...prev.videos, ...parsedVideos];
-          
-          // Apply the ranking engine to sort/filter before showing on screen
-          const rankedVideos = processVideoResults(seedQuery, [targetQuery], [totalVideos]);
-          
+          // We accumulate the RAW scraped videos, then re-rank/filter the whole
+          // set each time so filters apply consistently across pages.
+          const rawAccumulated = isInitialSearch
+            ? parsedVideos
+            : [...(prev.rawVideos ?? prev.videos), ...parsedVideos];
+
+          // Apply the ranking engine + the user's view/recency filters
+          const rankedVideos = processVideoResults(
+            seedQuery,
+            [targetQuery],
+            [rawAccumulated],
+            { minViews: prev.minViews, withinDays: prev.withinDays },
+          );
+
           setTimeout(() => setSearchedVideos(rankedVideos), 0);
 
           return {
             ...prev,
             videos: rankedVideos,
+            rawVideos: rawAccumulated,
             continuation: result.continuation,
             isLoading: false,
             isLoadingMore: false,
@@ -136,6 +166,23 @@ export default function NicheSearch(): React.ReactElement {
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setState(prev => ({ ...prev, query: e.target.value }));
   };
+
+  // Re-apply filters instantly against already-fetched raw videos (no new fetch).
+  const applyFilters = useCallback(
+    (minViews: number, withinDays: number): void => {
+      setState(prev => {
+        const reranked = processVideoResults(
+          prev.query,
+          [prev.searchTarget || prev.query],
+          [prev.rawVideos],
+          { minViews, withinDays },
+        );
+        setTimeout(() => setSearchedVideos(reranked), 0);
+        return { ...prev, minViews, withinDays, videos: reranked };
+      });
+    },
+    [setSearchedVideos],
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
@@ -230,6 +277,59 @@ export default function NicheSearch(): React.ReactElement {
             <span>{state.isLoading ? 'Searching…' : 'Search'}</span>
           </button>
         </div>
+      </div>
+
+      {/* Filter chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '2px' }}>
+          Views
+        </span>
+        {VIEW_OPTIONS.map(opt => {
+          const active = state.minViews === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => applyFilters(opt.value, state.withinDays)}
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '5px 11px',
+                borderRadius: '999px',
+                border: active ? '1px solid var(--yt-red)' : '1px solid var(--border-subtle)',
+                background: active ? 'var(--yt-red)' : 'var(--bg-surface)',
+                color: active ? '#fff' : 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+        <span style={{ width: '8px' }} />
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '2px' }}>
+          Date
+        </span>
+        {DATE_OPTIONS.map(opt => {
+          const active = state.withinDays === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => applyFilters(state.minViews, opt.value)}
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '5px 11px',
+                borderRadius: '999px',
+                border: active ? '1px solid var(--yt-red)' : '1px solid var(--border-subtle)',
+                background: active ? 'var(--yt-red)' : 'var(--bg-surface)',
+                color: active ? '#fff' : 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Error message */}
