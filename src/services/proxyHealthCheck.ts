@@ -1,38 +1,34 @@
+// Health check now pings our own Cloudflare Pages Function instead of public
+// CORS proxies. If the Function responds, search will work.
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || '';
+
 export async function checkProxyHealth(): Promise<{
   healthy: boolean;
   workingProxy: string | null;
   error?: string;
 }> {
-  const proxies = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-    'https://api.codetabs.com/v1/proxy?quest=',
-  ];
+  try {
+    const response = await fetch(
+      `${API_BASE}/api/youtube-search?q=test`,
+      { method: 'GET', signal: AbortSignal.timeout(8000) },
+    );
 
-  const testUrl = 'https://www.youtube.com/';
-
-  for (const proxy of proxies) {
-    try {
-      const response = await fetch(proxy + encodeURIComponent(testUrl), {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (response.ok) {
-        console.log(`Proxy health check passed: ${proxy}`);
-        return {
-          healthy: true,
-          workingProxy: proxy,
-        };
-      }
-    } catch (error) {
-      console.warn(`Proxy failed: ${proxy}`, error);
+    if (response.ok) {
+      console.log('Backend search Function is healthy.');
+      return { healthy: true, workingProxy: `${API_BASE}/api/youtube-search` };
     }
-  }
 
-  return {
-    healthy: false,
-    workingProxy: null,
-    error: 'No proxies available',
-  };
+    return {
+      healthy: false,
+      workingProxy: null,
+      error: `Function returned ${response.status}`,
+    };
+  } catch (error) {
+    console.warn('Backend search Function health check failed:', error);
+    return {
+      healthy: false,
+      workingProxy: null,
+      error: 'Search backend unavailable',
+    };
+  }
 }
