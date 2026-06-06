@@ -18,7 +18,9 @@ export interface GeneratorError {
 export async function generateScriptPrompt(video: ExtractedVideo): Promise<GeminiScriptResponse | GeneratorError> {
   // Always enrich with Supadata (transcripts) + Apify (deeper data) when keys are present.
   // This makes the AI output dramatically more accurate and grounded.
+  console.log('[Enrichment] generateScriptPrompt calling enrichVideoData for', video.video_id);
   const enriched: EnrichedVideo = await enrichVideoData(video);
+  console.log('[Enrichment] generateScriptPrompt received enriched source:', enriched.enrichmentSource || 'none', 'has transcript:', !!enriched.transcriptSummary, 'has fullDesc:', !!enriched.fullDescription);
 
   const extraContext = [
     enriched.fullDescription ? `FULL DESCRIPTION:\n${enriched.fullDescription}` : '',
@@ -100,7 +102,9 @@ export async function generateThumbnailPrompt(
   channelStyle?: ChannelStyleHint,
 ): Promise<GeminiThumbnailResponse | GeneratorError> {
   // Enrich for better thumbnails too (full description + transcript context helps with visual concepts)
+  console.log('[Enrichment] generateThumbnailPrompt calling enrichVideoData for', video.video_id);
   const enriched: EnrichedVideo = await enrichVideoData(video);
+  console.log('[Enrichment] generateThumbnailPrompt received enriched source:', enriched.enrichmentSource || 'none');
 
   // Build a "channel style" block if we scraped the channel's recent videos.
   let styleBlock = '';
