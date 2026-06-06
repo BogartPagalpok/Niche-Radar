@@ -19,21 +19,28 @@ async function tryModel(model: string, query: string, key: string): Promise<stri
           {
             role: 'system',
             content:
-              `You are a professional, white-hat corporate digital marketing assistant.` +
-              `Your task is strictly limited to improving semantic visibility and search engine optimization.` +
-              `You must adhere strictly to YouTube Terms of Service.`,
+              `You are a YouTube niche research expert who finds untapped, high-intent content angles. ` +
+              `You understand search intent, sub-niches, and what actually drives views on YouTube.`,
           },
           {
             role: 'user',
             content:
-              `Analyze the search term provided inside the XML tags below.` +
-              `Generate ONE optimized YouTube search phrase by adding 2-4 relevant, high-traffic descriptive words.` +
-              `Do not include sensationalized language.` +
-              `Return ONLY the phrase.\n\n` +
+              `A creator wants to research the topic in the tags below. ` +
+              `Rewrite it into ONE specific, high-intent YouTube search query that surfaces ` +
+              `successful videos in a focused SUB-NICHE of this topic.\n\n` +
+              `RULES:\n` +
+              `- DO NOT just append generic filler words like "review", "tutorial", "guide", "explained", "tips", or "${new Date().getFullYear()}".\n` +
+              `- DO narrow into a concrete angle, format, audience, or use-case (e.g. a specific problem, comparison, or scenario).\n` +
+              `- Keep it natural — something a real person would type into YouTube search.\n` +
+              `- 3 to 7 words. Return ONLY the query, no quotes, no explanation.\n\n` +
+              `Examples:\n` +
+              `"camera" -> "best budget camera for filmmaking"\n` +
+              `"coffee" -> "espresso machine mistakes beginners make"\n` +
+              `"investing" -> "dividend investing for passive income"\n\n` +
               `<query>${query}</query>`,
           },
         ],
-        temperature: 0.2,            // low temperature keeps the output safe and on-point
+        temperature: 0.6,            // a bit more creative so it finds real sub-niches, not generic padding
         max_completion_tokens: 150,  // reasoning models need headroom or content comes back empty
         reasoning_effort: 'low',     // keep reasoning short so it doesn't eat the token budget
       }),
