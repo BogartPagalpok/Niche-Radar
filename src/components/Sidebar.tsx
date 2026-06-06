@@ -57,7 +57,14 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-const MOBILE_ITEMS: ActiveView[] = ['dashboard', 'niche-search', 'trend-analysis', 'competitor-scout', 'saved-niches'];
+const MOBILE_ITEMS: ActiveView[] = [
+  'dashboard', 
+  'niche-search', 
+  'trend-analysis', 
+  'competitor-scout', 
+  'saved-niches',
+  'settings'   // Added so users can access App Settings on mobile to enter API keys
+];
 
 const ITEM_MAP = NAV_SECTIONS.flatMap(s => s.items).reduce((acc, item) => {
   acc[item.id] = item;
