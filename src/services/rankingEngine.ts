@@ -28,12 +28,21 @@ export interface RankedVideo extends ExtractedVideo {
   score: number;
 }
 
+export interface RankingFilters {
+  /** Drop videos below this many views. 0 = no minimum. */
+  minViews?: number;
+  /** Drop videos older than this many days. 0 = no limit. */
+  withinDays?: number;
+}
+
 export function processVideoResults(
   seedKeyword: string,
   expandedKeywords: string[],
-  rawVideoArrays: ExtractedVideo[][]
+  rawVideoArrays: ExtractedVideo[][],
+  filters: RankingFilters = {}
 ): RankedVideo[] {
-  
+  const { minViews = 0, withinDays = 0 } = filters;
+
   // Phase 5: Merge Results
   const allVideos = rawVideoArrays.flat();
 
@@ -44,11 +53,22 @@ export function processVideoResults(
   });
   const uniqueVideos = Array.from(uniqueMap.values());
 
-  // Phase 7: Relevance Filtering (Must contain seed or an expanded keyword)
-  const allowedTerms = [seedKeyword, ...expandedKeywords].map(k => k.toLowerCase());
+  // Phase 7: Relevance is now a SCORE, not a hard filter.
+  // (The old code dropped any video whose title/desc/channel didn't contain an
+  //  expanded keyword — which silently deleted good results. We only apply a
+  //  soft relevance signal below, plus the user's explicit view/date filters.)
+  const allowedTerms = [seedKeyword, ...expandedKeywords]
+    .map(k => k.toLowerCase())
+    .filter(Boolean);
+
+  // Apply ONLY the user's explicit filters (views + recency).
+  const cutoffDays = withinDays > 0 ? withinDays : Infinity;
   const filteredVideos = uniqueVideos.filter(v => {
-    const textToSearch = `${v.title} ${v.description} ${v.channel_name}`.toLowerCase();
-    return allowedTerms.some(term => textToSearch.includes(term));
+    const views = parseViews(v.view_count);
+    const daysOld = parseDaysOld(v.upload_date);
+    if (views < minViews) return false;
+    if (daysOld > cutoffDays) return false;
+    return true;
   });
 
   // Calculate global max values for normalizing scores to 0-100
