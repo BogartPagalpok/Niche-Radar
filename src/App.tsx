@@ -18,7 +18,7 @@ import { X } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
-function RightPanelContent({ view, onClose }: { view: ActiveView; onClose?: () => void }): React.ReactElement {
+function RightPanelContent({ onClose }: { view: ActiveView; onClose?: () => void }): React.ReactElement {
   const { selectedVideo } = useVideoContext();
 
   if (selectedVideo) {
