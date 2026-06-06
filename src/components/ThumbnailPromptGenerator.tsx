@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Copy, CheckCircle2, Loader2, AlertCircle, Play } from 'lucide-react';
 import { generateThumbnailPrompt, isGeneratorError } from '../services/geminiService';
+import { fetchChannelStyle } from '../services/channelStyle';
+import { analyzeThumbnailStyle } from '../services/thumbnailVision';
 import { type ExtractedVideo } from '../services/youtubeScraper';
 
 // This UI component is correct and requires no changes. 
@@ -38,7 +40,32 @@ export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProp
   const handleGenerateThumbnail = async (): Promise<void> => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    const result = await generateThumbnailPrompt(video);
+    // Scan the channel's recent videos so the prompt matches its style.
+    // Non-blocking: if it fails, we still generate a great generic prompt.
+    let channelStyle: { titles: string[]; thumbnails: string[]; visionStyle?: string } | undefined;
+    let channelThumbs: string[] = [];
+    if (video.channel_id) {
+      const style = await fetchChannelStyle(video.channel_id);
+      if (style.titles.length > 0 || style.thumbnails.length > 0) {
+        channelThumbs = style.thumbnails;
+        channelStyle = { titles: style.titles, thumbnails: style.thumbnails };
+      }
+    }
+
+    // VISION: have GPT-4o look at the REAL thumbnails to capture the true visual
+    // style (color, layout, faces, text). This is the biggest accuracy boost.
+    if (video.thumbnail_url || channelThumbs.length > 0) {
+      const vision = await analyzeThumbnailStyle(video.thumbnail_url, channelThumbs);
+      if (vision.styleAnalysis) {
+        channelStyle = {
+          titles: channelStyle?.titles ?? [],
+          thumbnails: channelStyle?.thumbnails ?? [],
+          visionStyle: vision.styleAnalysis,
+        };
+      }
+    }
+
+    const result = await generateThumbnailPrompt(video, channelStyle);
 
     if (isGeneratorError(result)) {
       setState({
