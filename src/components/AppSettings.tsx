@@ -9,7 +9,7 @@ import {
   STORAGE_KEY_CLIENT_SECRET,
   STORAGE_KEY_ACCESS_TOKEN,
   STORAGE_KEY_TOKEN_EXPIRY,
-  forceRefreshToken,
+  getValidToken,
 } from '../services/credentialsService';
 
 // These constants are defined locally here to ensure the build succeeds 
@@ -241,19 +241,19 @@ export default function AppSettings() {
     setTestStatus('testing');
     setTestMsg('');
     try {
-      const { token, source } = await forceRefreshToken();
+      const token = await getValidToken();
       if (token) {
         setTestStatus('ok');
-        setTestMsg(`✓ Fresh token obtained. ${source}. Token ends in …${token.slice(-6)}`);
+        setTestMsg('Token retrieved successfully. API connection is active.');
       } else {
         setTestStatus('fail');
-        setTestMsg(source || 'Could not obtain a valid token.');
+        setTestMsg('Could not obtain a valid token.');
       }
-    } catch (e) {
+    } catch {
       setTestStatus('fail');
-      setTestMsg(e instanceof Error ? e.message : 'Connection test failed.');
+      setTestMsg('Connection test failed.');
     }
-    setTimeout(() => setTestStatus('idle'), 8000);
+    setTimeout(() => setTestStatus('idle'), 5000);
   };
 
   const anyFilled = clientId || clientSecret || refreshToken || channelId || geminiKey || cerebrasKey || groqKey || githubToken || supadataKey || apifyKey;
