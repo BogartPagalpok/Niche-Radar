@@ -130,7 +130,14 @@ export async function generateThumbnailPrompt(
     enriched.transcriptSummary ? `TRANSCRIPT CONTEXT: ${enriched.transcriptSummary.slice(0, 800)}` : '',
   ].filter(Boolean).join('\n');
 
-  const userPrompt = `You are a world-class YouTube thumbnail strategist and AI image-prompt engineer who has studied thousands of high-CTR thumbnails (MrBeast, Veritasium, MKBHD style). Analyze this video using the enriched data, then design 3 ORIGINAL, scroll-stopping thumbnail concepts with ready-to-use Midjourney prompts that are HIGHLY SPECIFIC to this video's topic and have maximum viral potential.
+  const userPrompt = `You are a YouTube thumbnail strategist and AI image-prompt engineer. Your job is to create ORIGINAL thumbnail concepts that preserve the SOURCE VIDEO / CHANNEL visual language as closely as possible while changing the topic/content enough to be original.
+
+STYLE FIDELITY IS THE TOP PRIORITY:
+- If the real thumbnail style is simple 2D cartoon, comic strip, flat vector, anime, hand-drawn, meme collage, low-detail doodle, or any non-realistic medium, the generated prompts MUST stay in that exact medium.
+- Do NOT upgrade cartoon/comic/flat thumbnails into photorealistic, cinematic realism, 3D render, ultra-detailed faces, shallow depth of field, DSLR photography, or dramatic studio lighting.
+- Only use realistic/cinematic/photographic language if the source thumbnails are actually realistic/cinematic/photographic.
+- Treat the REAL THUMBNAIL STYLE block as a strict style lock. It overrides generic CTR advice.
+- Clone the visual grammar, not copyrighted characters, logos, or exact frames.
 
 VIDEO DATA:
 Title: ${enriched.title}
@@ -139,31 +146,36 @@ Views: ${enriched.view_count}
 Description: ${enriched.fullDescription || enriched.description || 'No description available'}
 ${extraForThumb ? extraForThumb + '\n' : ''}${styleBlock}
 
-THUMBNAIL PSYCHOLOGY — apply these proven CTR principles to every concept:
+THUMBNAIL PSYCHOLOGY — apply these without changing the source art style:
 - CURIOSITY GAP: imply a question or "what happens next?"
-- EMOTION: a clear emotional hook (shock, awe, tension, desire, transformation).
+- EMOTION: clear readable expression/action appropriate to the source style.
 - ONE CLEAR FOCAL POINT
-- HIGH CONTRAST & COLOR POP
-- MOBILE-FIRST
-- DEPTH
-- RULE OF THIRDS
+- HIGH CONTRAST & COLOR POP matching the source palette
+- MOBILE-FIRST readability
+- SIMPLE composition that matches the channel's proven layout pattern
 
 CRITICAL RULES:
 1. The main subject MUST be specific to THIS video's actual topic from the enriched data.
-2. ALWAYS include typography.
-3. Each of the 3 concepts must use a DIFFERENT strategy.
-4. Midjourney prompts must be richly descriptive and end with technical flags.
+2. ALWAYS include typography unless the real source style normally uses no typography.
+3. Each of the 3 concepts must use a DIFFERENT CTR strategy but the SAME source visual style.
+4. Every image prompt must begin with a concise SOURCE STYLE LOCK.
+5. Every image prompt must include a STYLE NEGATIVE clause that prevents the wrong medium, e.g. "not photorealistic, not 3D render" when source is cartoon.
+6. End with technical flags, but do not use flags/phrases that contradict the source style.
 
 OUTPUT EXACTLY THIS FORMAT:
 
+SOURCE STYLE LOCK:
+[One strict paragraph describing the exact source/channel visual style and what to avoid. If source is cartoon/comic/flat, explicitly say not photorealistic and not 3D.]
+
 THUMBNAIL CONCEPT 1 - [Strategy name]
 Main Subject: [Specific, topic-relevant subject + expression/action]
-Typography Text: ["Short punchy 3-5 word phrase"]
-Typography Style: [Bold font + color + effect]
-Color Palette: [2-3 dominant colors]
-Composition: [Focal placement, depth, background treatment]
-Midjourney prompt: [Detailed subject], [background], [lighting & color], [mood], shallow depth of field, dramatic studio lighting, ultra-detailed, high contrast, typography "TEXT" in [style], --ar 16:9 --style raw --v 6.1
-Why this works for CTR: [2 sentences referencing the psychology + enriched data]
+Typography Text: ["Short punchy 2-5 word phrase"]
+Typography Style: [Match source typography, color, outline, placement]
+Color Palette: [Match source palette]
+Composition: [Match source layout/focal placement/background treatment]
+Image prompt: SOURCE STYLE LOCK: [repeat style lock in brief]. [Detailed subject/action/background in the source style], typography "TEXT" in [matched style], style negatives: [wrong styles to avoid], --ar 16:9 --style raw
+Why this works for CTR: [2 sentences referencing psychology + enriched data]
+Style match notes: [Explain how this preserves the source thumbnail style]
 Best for: [target viewer]
 
 [Same for CONCEPT 2 and 3]`;
