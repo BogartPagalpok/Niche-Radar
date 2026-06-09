@@ -31,6 +31,7 @@ const STORAGE_KEY_GROQ = 'niche_radar_groq_key';
 const STORAGE_KEY_GITHUB = 'niche_radar_github_token';
 const STORAGE_KEY_SUPADATA = 'niche_radar_supadata_key';
 const STORAGE_KEY_APIFY = 'niche_radar_apify_key';
+const STORAGE_KEY_APIFY_ACTOR = 'niche_radar_apify_actor_id';
 
 interface CredentialFieldProps {
   id: string;
@@ -158,6 +159,7 @@ export default function AppSettings() {
   // Data Keys
   const [supadataKey, setSupadataKey] = useState('');
   const [apifyKey, setApifyKey] = useState('');
+  const [apifyActorId, setApifyActorId] = useState('');
   const [assumedRpm, setAssumedRpm] = useState<number>(() => {
     const raw = localStorage.getItem(STORAGE_KEY_RPM);
     const n = raw ? parseFloat(raw) : NaN;
@@ -171,7 +173,7 @@ export default function AppSettings() {
 
   const [saved, setSaved] = useState({
     clientId: false, clientSecret: false, refreshToken: false, channelId: false,
-    gemini: false, cerebras: false, groq: false, github: false, supadata: false, apify: false
+    gemini: false, cerebras: false, groq: false, github: false, supadata: false, apify: false, apifyActor: false
   });
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -190,6 +192,7 @@ export default function AppSettings() {
       { key: STORAGE_KEY_GITHUB, setter: setGithubToken, field: 'github' },
       { key: STORAGE_KEY_SUPADATA, setter: setSupadataKey, field: 'supadata' },
       { key: STORAGE_KEY_APIFY, setter: setApifyKey, field: 'apify' },
+      { key: STORAGE_KEY_APIFY_ACTOR, setter: setApifyActorId, field: 'apifyActor' },
     ];
     let newSavedState = { ...saved };
     keys.forEach(({ key, setter, field }) => {
@@ -213,6 +216,7 @@ export default function AppSettings() {
       { k: STORAGE_KEY_GITHUB, v: githubToken, f: 'github' },
       { k: STORAGE_KEY_SUPADATA, v: supadataKey, f: 'supadata' },
       { k: STORAGE_KEY_APIFY, v: apifyKey, f: 'apify' },
+      { k: STORAGE_KEY_APIFY_ACTOR, v: apifyActorId, f: 'apifyActor' },
     ];
     let newSavedState = { ...saved };
     data.forEach(item => {
@@ -231,7 +235,7 @@ export default function AppSettings() {
   const handleClear = () => {
     [STORAGE_KEY_CLIENT_ID, STORAGE_KEY_CLIENT_SECRET, STORAGE_KEY_REFRESH_TOKEN,
       STORAGE_KEY_CHANNEL_ID, STORAGE_KEY_GEMINI, STORAGE_KEY_CEREBRAS, STORAGE_KEY_GROQ,
-      STORAGE_KEY_GITHUB, STORAGE_KEY_SUPADATA, STORAGE_KEY_APIFY, 
+      STORAGE_KEY_GITHUB, STORAGE_KEY_SUPADATA, STORAGE_KEY_APIFY, STORAGE_KEY_APIFY_ACTOR, 
       STORAGE_KEY_ACCESS_TOKEN, STORAGE_KEY_TOKEN_EXPIRY]
       .forEach(k => localStorage.removeItem(k));
     window.location.reload();
@@ -256,7 +260,7 @@ export default function AppSettings() {
     setTimeout(() => setTestStatus('idle'), 8000);
   };
 
-  const anyFilled = clientId || clientSecret || refreshToken || channelId || geminiKey || cerebrasKey || groqKey || githubToken || supadataKey || apifyKey;
+  const anyFilled = clientId || clientSecret || refreshToken || channelId || geminiKey || cerebrasKey || groqKey || githubToken || supadataKey || apifyKey || apifyActorId;
 
   return (
     <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -406,6 +410,11 @@ export default function AppSettings() {
           <CredentialField
             id="apify-key" label="Apify API Token" hint="Used for bulk channel scraping and deep analytics."
             placeholder="apify_api_..." icon={Database} value={apifyKey} onChange={setApifyKey} saved={saved.apify}
+          />
+          <div className="clay-divider" />
+          <CredentialField
+            id="apify-actor" label="Apify Actor ID (Optional)" hint="Paste the actor to use. Example: apidojo/youtube-scraper-api. Leave blank to use the server default."
+            placeholder="apidojo/youtube-scraper-api" icon={Database} value={apifyActorId} onChange={setApifyActorId} saved={saved.apifyActor}
           />
         </div>
       </div>
