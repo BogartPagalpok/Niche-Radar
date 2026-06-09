@@ -70,7 +70,7 @@ export async function enrichVideoData(video: ExtractedVideo): Promise<EnrichedVi
   if (creds.apifyKey) {
     console.log('[Enrichment] Apify key found, attempting data fetch for', video.video_id);
     try {
-      const apifyData = await fetchApifyVideoData(video.video_id, creds.apifyKey);
+      const apifyData = await fetchApifyVideoData(video.video_id, creds.apifyKey, creds.apifyActorId || undefined);
       if (apifyData) {
         enriched.extraMetadata = apifyData;
 
@@ -191,10 +191,50 @@ async function fetchSupadataVideoData(videoId: string, apiKey: string): Promise<
 // ============================================
 // Apify Integration
 // ============================================
+function normalizeApifyActorId(actorId: string): string {
+  const trimmed = actorId.trim();
+  const apifyUrlMatch = trimmed.match(/apify\.com\/([^/?#]+)\/([^/?#]+)/i);
+  if (apifyUrlMatch) {
+    return `${apifyUrlMatch[1]}~${apifyUrlMatch[2]}`;
+  }
+  return trimmed.replace('/', '~');
+}
+
+function buildApifyInput(actorId: string, videoId: string): Record<string, unknown> {
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+
+  if (actorId === 'apidojo~youtube-scraper-api') {
+    return {
+      startUrls: [{ url }],
+      includeShorts: false,
+      includeLiveStreams: false,
+      getTrending: false,
+      maxItems: 1,
+    };
+  }
+
+  if (actorId === 'streamers~youtube-channel-scraper') {
+    return {
+      startUrls: [{ url }],
+      maxResults: 1,
+      maxResultsShorts: 0,
+      maxResultStreams: 0,
+    };
+  }
+
+  return {
+    startUrls: [{ url }],
+    maxResults: 1,
+    maxResultsShorts: 0,
+    maxResultStreams: 0,
+    downloadSubtitles: false,
+  };
+}
+
 /**
  * Fetches additional video/channel data using Apify (with polling + dataset retrieval for real data).
  */
-async function fetchApifyVideoData(videoId: string, apiKey: string): Promise<any | null> {
+async function fetchApifyVideoData(videoId: string, apiKey: string, actorIdOverride?: string): Promise<any | null> {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE || '';
 
   // In the browser we MUST go through our Cloudflare Pages Function proxy.
@@ -211,7 +251,10 @@ async function fetchApifyVideoData(videoId: string, apiKey: string): Promise<any
         body: JSON.stringify({
           videoId,
           apifyKey: apiKey,
-          // actorId is optional; server uses 'streamers/youtube-scraper' by default
+          // Optional UI setting. Examples:
+          // - apidojo/youtube-scraper-api
+          // - streamers/youtube-channel-scraper
+          actorId: actorIdOverride,
         }),
       });
 
@@ -233,20 +276,16 @@ async function fetchApifyVideoData(videoId: string, apiKey: string): Promise<any
   }
 
   // Fallback for non-browser environments (rare in this app)
-  const actorId = 'streamers/youtube-scraper';
+  // Apify REST API uses tilde-separated public actor names, not slash paths.
+  // Default matches the Fast YouTube Channel Scraper actor used in Apify setup.
+  const actorId = normalizeApifyActorId(actorIdOverride || 'streamers/youtube-channel-scraper');
   console.log(`[Enrichment] (non-browser) Direct Apify on actor "${actorId}" for video ${videoId}`);
 
   const runUrl = `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiKey}`;
   const runResponse = await fetch(runUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      startUrls: [{ url: `https://www.youtube.com/watch?v=${videoId}` }],
-      maxItems: 1,
-      includeVideoDetails: true,
-      includeChannelDetails: true,
-      maxResults: 1,
-    }),
+    body: JSON.stringify(buildApifyInput(actorId, videoId)),
   });
 
   if (!runResponse.ok) {
