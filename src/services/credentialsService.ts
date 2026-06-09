@@ -13,6 +13,7 @@ export const STORAGE_KEY_GROQ = 'niche_radar_groq_key';
 export const STORAGE_KEY_GITHUB = 'niche_radar_github_token';
 export const STORAGE_KEY_SUPADATA = 'niche_radar_supadata_key';
 export const STORAGE_KEY_APIFY = 'niche_radar_apify_key';
+export const STORAGE_KEY_APIFY_ACTOR = 'niche_radar_apify_actor_id';
 
 // Legacy alias so old imports keep compiling
 export const STORAGE_KEY_TOKEN = STORAGE_KEY_ACCESS_TOKEN;
@@ -28,6 +29,7 @@ export interface Credentials {
   youtubeApiKey: null;          // removed – kept for type compat
   supadataKey: string | null;
   apifyKey: string | null;
+  apifyActorId: string | null;
 }
 
 export function getCredentials(): Credentials {
@@ -43,6 +45,7 @@ export function getCredentials(): Credentials {
     youtubeApiKey: null,
     supadataKey: localStorage.getItem(STORAGE_KEY_SUPADATA),
     apifyKey: localStorage.getItem(STORAGE_KEY_APIFY),
+    apifyActorId: localStorage.getItem(STORAGE_KEY_APIFY_ACTOR),
   };
 }
 
