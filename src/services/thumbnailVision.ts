@@ -35,13 +35,15 @@ export async function analyzeThumbnailStyle(
     {
       type: 'text',
       text:
-        'You are a YouTube thumbnail art director. Look at these REAL thumbnails ' +
+        'You are a YouTube thumbnail VISUAL STYLE FORENSICS analyst. Look at these REAL thumbnails ' +
         '(the first is the target video; the rest are from the same channel). ' +
-        'Describe the recurring VISUAL STYLE in a concise, reusable spec covering: ' +
-        '1) color palette & contrast, 2) composition/layout & focal point, ' +
-        '3) whether a human face/expression is used and how, 4) text/typography ' +
-        'style & placement, 5) lighting & mood, 6) any recurring motifs. ' +
-        'Output a tight paragraph an AI image generator can follow to match this look.',
+        'Your job is NOT to make them more cinematic or realistic. Your job is to preserve the exact art direction. ' +
+        'Identify the source medium first: photorealistic, 3D render, anime, flat vector, comic strip, simple 2D cartoon, meme collage, etc. ' +
+        'If the source is cartoon/comic/flat/vector, explicitly say: DO NOT use photorealism, realistic lighting, 3D render, shallow depth of field, or ultra-detailed faces. ' +
+        'Return a reusable STYLE LOCK covering: 1) medium/art style, 2) linework/detail level, 3) color palette & contrast, ' +
+        '4) composition/layout & focal point, 5) face/expression style if any, 6) typography style & placement, ' +
+        '7) background treatment, 8) motifs, and 9) style-negative words to avoid. ' +
+        'Output a concise but strict paragraph an AI image generator can follow to match the source look.',
     },
     ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
   ];
