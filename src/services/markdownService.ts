@@ -203,7 +203,7 @@ function createTextOverlay(beat: FlowBeat, shotNumberWithinBeat: number): string
 const FLOW_SHOT_PATTERNS = [
   {
     type: 'Wide establishing shot',
-    instruction: 'Create a wide cinematic establishing frame that clearly shows the place, scale, and atmosphere for this moment.',
+    instruction: 'Create a wide source-style establishing frame that clearly shows the place, scale, and atmosphere for this moment while preserving the exact art medium and detail level.',
   },
   {
     type: 'Human stakes shot',
@@ -215,7 +215,7 @@ const FLOW_SHOT_PATTERNS = [
   },
   {
     type: 'Map / context visual',
-    instruction: 'Create a clean cinematic map, timeline, route, system, or context visual that helps the viewer understand where this moment fits.',
+    instruction: 'Create a clean source-style map, timeline, route, system, or context visual that helps the viewer understand where this moment fits, matching the same linework and palette.',
   },
   {
     type: 'Cause-and-effect frame',
@@ -227,7 +227,7 @@ const FLOW_SHOT_PATTERNS = [
   },
   {
     type: 'Conflict / tension frame',
-    instruction: 'Create a tense cinematic frame with strong contrast, directional lighting, and visual pressure building toward a turning point.',
+    instruction: 'Create a tense source-style frame with the same source contrast, shading approach, and visual pressure building toward a turning point.',
   },
   {
     type: 'Transition / motion frame',
@@ -258,7 +258,7 @@ function buildFlowImageRows(params: MarkdownDocumentParams, styleSeed: number, d
     const timecode = formatTimecode(timeSeconds);
     const filename = `${id.toLowerCase()}-${slugify(beat.title)}-${filenameTimecode(timeSeconds)}.png`;
     const shotSeed = styleSeed + index;
-    const prompt = `Use the Global Style Lock. Preserve the source/channel art medium exactly; do not convert cartoon, comic, flat vector, anime, or illustrated thumbnails into photorealistic/3D/cinematic realism. Topic: "${params.video.title}". Timecode: ${timecode}. Beat: "${beat.title}". Beat description: ${beat.description}. This is shot ${shotNumberWithinBeat} inside this beat, so choose a distinct sub-moment and avoid repeating the previous frame. ${pattern.instruction} Make this frame work as one storyboard image in a continuous long-form video sequence. No visible text unless the Text Overlay column is not NONE.`;
+    const prompt = `Use the Global Style Lock and Source Thumbnail Style DNA. Preserve the detected source/channel art medium exactly; do not add style terms that contradict the detected Do Use / Do NOT Use prompt phrases. Topic: "${params.video.title}". Timecode: ${timecode}. Beat: "${beat.title}". Beat description: ${beat.description}. This is shot ${shotNumberWithinBeat} inside this beat, so choose a distinct sub-moment and avoid repeating the previous frame. ${pattern.instruction} Make this frame work as one storyboard image in a continuous long-form video sequence. No visible text unless the Text Overlay column is not NONE.`;
 
     rows.push({
       id,
@@ -292,9 +292,9 @@ function buildFlowImageSequenceManifest(params: MarkdownDocumentParams): string 
       'Use the script blueprint and structural template as the source of truth.'
   );
   const structureSummary = markdownTableCell(extractMarkdownSection(scriptPrompt, 6).slice(0, 1800));
-  const visualReference = markdownTableCell(thumbnailPrompt?.slice(0, 2000) || 'Use the thumbnail prompt above only as broad visual DNA, not as the full video style.');
+  const visualReference = markdownTableCell(thumbnailPrompt?.slice(0, 6000) || 'Use the thumbnail prompt above only as broad visual DNA, not as the full video style.');
 
-  const globalStyle = `Source-faithful YouTube storyboard frames for "${topic}" from ${channel}; 16:9; the PRIMARY goal is to match the source/channel visual language from the Thumbnail Visual DNA below. Preserve the exact art medium: if the source is 2D cartoon, comic strip, flat vector, anime, doodle, collage, or simple illustration, stay in that medium and avoid photorealism, realistic lighting, 3D render, DSLR/lens language, shallow depth of field, and ultra-detailed faces. If the source is realistic, then preserve that realistic/cinematic look. Keep the same palette, linework/detail level, character/expression style, typography style, background simplicity/complexity, camera/composition grammar, and recurring motifs. One clear focal point per frame, mobile-readable, designed for slow push-ins, pans, parallax, map movement, or simple animation without changing style.`;
+  const globalStyle = `Source-faithful YouTube storyboard frames for "${topic}" from ${channel}; 16:9; the PRIMARY goal is to match the detected source/channel visual language from the Source Thumbnail Style DNA below. Do not hardcode or assume an art style from the topic. Preserve the detected source medium, linework/detail level, rendering method, character/expression system, palette, typography, background treatment, composition grammar, and recurring motifs. Follow the detected Do Use and Do NOT Use prompt phrases exactly. One clear focal point per frame, mobile-readable, designed for simple animation without changing the detected style.`;
 
   const imageRows = rows
     .map(row => {
@@ -319,7 +319,15 @@ This is a **full-content visual storyboard**, not a 10-image thumbnail pack. It 
 - **Source thumbnail URL:** ${video.thumbnail_url || 'Not available'}
 - **Structural template used:** ${structureSummary || 'No structural template was detected, so the sequence uses a generic hook-to-payoff long-form structure.'}
 - **Extra source context:** ${sourceDescription}
-- **Thumbnail visual DNA:** ${visualReference}
+- **Thumbnail visual DNA summary:** ${visualReference}
+
+### Source Thumbnail Style DNA for Flow
+
+Use this as the primary style specification. Do not summarize it down to a short generic label. Preserve the detected medium, linework, shape language, palette, typography, background, composition, motifs, and negative style constraints.
+
+\`\`\`text
+${thumbnailPrompt?.slice(0, 6000) || 'No thumbnail style prompt was generated. Generate the thumbnail prompt first, then export the Markdown again.'}
+\`\`\`
 
 ### Seed / Consistency Control
 
@@ -339,7 +347,7 @@ ${globalStyle}
 
 1. Generate the queue in exact numeric order from **IMG-001** to **${rows[rows.length - 1]?.id ?? 'the final image'}**.
 2. Keep the same visual language, color palette, linework/detail level, lighting/background treatment, camera feel, texture quality, and subject design across the whole sequence.
-3. Do **not** upgrade a cartoon/comic/flat/vector source into realistic or cinematic imagery; style fidelity beats visual polish.
+3. Do **not** upgrade, reinterpret, or replace the detected source style with a different art direction; style fidelity beats visual polish.
 4. These are video storyboard frames, so avoid giant thumbnail-style typography except when the **Text Overlay** column is not **NONE**.
 5. Do not redesign characters, costumes, environments, maps, coins, props, or UI cards after they first appear.
 6. Keep every image 16:9 and leave safe space for captions/subtitles.
@@ -347,7 +355,7 @@ ${globalStyle}
 
 ### Shared Negative Prompt
 
-Avoid: low quality, blurry, messy composition, over-cluttered frame, unreadable text, random typography, distorted faces, extra fingers, inconsistent character design, random art style changes, watermark, unrelated logos, noisy background, low contrast, off-brand colors, modern objects unless the prompt asks for a modern parallel, photorealism/3D/cinematic realism when the source style is cartoon/comic/flat/vector.
+Avoid: low quality, blurry, messy composition, over-cluttered frame, unreadable text, random typography, distorted faces, extra fingers, inconsistent character design, random art style changes, watermark, unrelated logos, noisy background, low contrast, off-brand colors, modern objects unless the prompt asks for a modern parallel, and any style terms listed in the Source Thumbnail Style DNA's Do NOT Use Prompt Phrases.
 
 ### Flow Clip Assembly Instructions
 
