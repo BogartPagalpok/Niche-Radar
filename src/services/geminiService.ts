@@ -133,11 +133,11 @@ export async function generateThumbnailPrompt(
   const userPrompt = `You are a YouTube thumbnail strategist and AI image-prompt engineer. Your job is to create ORIGINAL thumbnail concepts that preserve the SOURCE VIDEO / CHANNEL visual language as closely as possible while changing the topic/content enough to be original.
 
 STYLE FIDELITY IS THE TOP PRIORITY:
-- If the real thumbnail style is simple 2D cartoon, comic strip, flat vector, anime, hand-drawn, meme collage, low-detail doodle, or any non-realistic medium, the generated prompts MUST stay in that exact medium.
-- Do NOT upgrade cartoon/comic/flat thumbnails into photorealistic, cinematic realism, 3D render, ultra-detailed faces, shallow depth of field, DSLR photography, or dramatic studio lighting.
-- Only use realistic/cinematic/photographic language if the source thumbnails are actually realistic/cinematic/photographic.
-- Treat the REAL THUMBNAIL STYLE block as a strict style lock. It overrides generic CTR advice.
-- Clone the visual grammar, not copyrighted characters, logos, or exact frames.
+- Treat the REAL THUMBNAIL STYLE block as a strict, dynamic style lock extracted from the actual source/channel thumbnails.
+- Do not hardcode, invent, or assume an art style from the video topic, niche, or genre.
+- Preserve the observed source medium, linework, rendering method, palette, typography, background treatment, composition, and motifs.
+- Do not add any visual style term that contradicts the detected SOURCE STYLE DNA.
+- Copy the visual grammar, not copyrighted characters, logos, exact frames, or channel branding assets.
 
 VIDEO DATA:
 Title: ${enriched.title}
@@ -158,14 +158,27 @@ CRITICAL RULES:
 1. The main subject MUST be specific to THIS video's actual topic from the enriched data.
 2. ALWAYS include typography unless the real source style normally uses no typography.
 3. Each of the 3 concepts must use a DIFFERENT CTR strategy but the SAME source visual style.
-4. Every image prompt must begin with a concise SOURCE STYLE LOCK.
-5. Every image prompt must include a STYLE NEGATIVE clause that prevents the wrong medium, e.g. "not photorealistic, not 3D render" when source is cartoon.
-6. End with technical flags, but do not use flags/phrases that contradict the source style.
+4. Every image prompt must begin with the detailed SOURCE STYLE DNA, not a short generic label.
+5. Every image prompt must include a STYLE NEGATIVE clause copied/adapted from the detected "Do NOT Use Prompt Phrases" in the source style DNA.
+6. End with technical flags, but do not use flags/phrases that contradict the detected source style.
+7. Do not be vague. Include enough observed detail for Flow/Midjourney to reproduce the visual grammar.
 
 OUTPUT EXACTLY THIS FORMAT:
 
-SOURCE STYLE LOCK:
-[One strict paragraph describing the exact source/channel visual style and what to avoid. If source is cartoon/comic/flat, explicitly say not photorealistic and not 3D.]
+SOURCE STYLE DNA:
+- Source Medium:
+- Art Direction:
+- Linework:
+- Shape Language / Character Design:
+- Facial Expression Style:
+- Color Palette:
+- Lighting / Shading:
+- Background Treatment:
+- Composition Template:
+- Typography System:
+- Recurring Motifs:
+- Do Use Prompt Phrases:
+- Do NOT Use Prompt Phrases:
 
 THUMBNAIL CONCEPT 1 - [Strategy name]
 Main Subject: [Specific, topic-relevant subject + expression/action]
@@ -173,17 +186,17 @@ Typography Text: ["Short punchy 2-5 word phrase"]
 Typography Style: [Match source typography, color, outline, placement]
 Color Palette: [Match source palette]
 Composition: [Match source layout/focal placement/background treatment]
-Image prompt: SOURCE STYLE LOCK: [repeat style lock in brief]. [Detailed subject/action/background in the source style], typography "TEXT" in [matched style], style negatives: [wrong styles to avoid], --ar 16:9 --style raw
+Image prompt: SOURCE STYLE DNA: [repeat the detailed medium, linework, shape language, palette, shading, typography, background, and composition details]. [Detailed subject/action/background in the source style], typography "TEXT" in [matched style], style negatives: [wrong styles to avoid], --ar 16:9 --style raw
 Why this works for CTR: [2 sentences referencing psychology + enriched data]
-Style match notes: [Explain how this preserves the source thumbnail style]
+Style match notes: [Explain exactly which source-style traits are preserved]
 Best for: [target viewer]
 
 [Same for CONCEPT 2 and 3]`;
 
   const result = await generateText({
     prompt: userPrompt,
-    temperature: 0.8,
-    maxTokens: 4096,
+    temperature: 0.65,
+    maxTokens: 6144,
     task: 'thumbnail',
   });
 
