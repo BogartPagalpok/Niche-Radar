@@ -4,7 +4,56 @@
 // Accepts: { videoId, apifyKey, actorId? }
 // Returns clean scraped data or error. No CORS issues for the browser.
 
-interface Env {}
+interface Env {
+  APIFY_ACTOR_ID?: string;
+}
+
+function normalizeApifyActorId(actorId: string): string {
+  const trimmed = actorId.trim();
+
+  // Apify public actor pages use owner/actor-name, e.g. streamers/youtube-scraper,
+  // but the REST API path parameter expects owner~actor-name. If we send the slash
+  // form directly inside /v2/acts/{actorId}/runs, Apify receives an invalid path
+  // and returns 404.
+  const apifyUrlMatch = trimmed.match(/apify\.com\/([^/?#]+)\/([^/?#]+)/i);
+  if (apifyUrlMatch) {
+    return `${apifyUrlMatch[1]}~${apifyUrlMatch[2]}`;
+  }
+
+  return trimmed.replace('/', '~');
+}
+
+function buildApifyInput(actorId: string, videoId: string): Record<string, unknown> {
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+
+  if (actorId === 'apidojo~youtube-scraper-api') {
+    return {
+      startUrls: [{ url }],
+      includeShorts: false,
+      includeLiveStreams: false,
+      getTrending: false,
+      maxItems: 1,
+    };
+  }
+
+  if (actorId === 'streamers~youtube-channel-scraper') {
+    return {
+      startUrls: [{ url }],
+      maxResults: 1,
+      maxResultsShorts: 0,
+      maxResultStreams: 0,
+    };
+  }
+
+  // Default for streamers/youtube-scraper and similar YouTube actors.
+  return {
+    startUrls: [{ url }],
+    maxResults: 1,
+    maxResultsShorts: 0,
+    maxResultStreams: 0,
+    downloadSubtitles: false,
+  };
+}
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -41,23 +90,22 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     return json({ error: 'videoId and apifyKey are required' }, 400);
   }
 
-  // Use the actor the user actually has access to (from their Apify Console)
-  const actorId = requestedActor || 'streamers/youtube-scraper';
+  // Use the actor the user actually has access to (from their Apify Console).
+  // Default matches the actor in the Apify setup screenshot:
+  // https://apify.com/streamers/youtube-channel-scraper
+  const actorId = normalizeApifyActorId(
+    requestedActor || ctx.env.APIFY_ACTOR_ID || 'streamers/youtube-channel-scraper'
+  );
+  const encodedActorId = encodeURIComponent(actorId);
 
   console.log(`[Apify Proxy] Starting for video ${videoId} on actor ${actorId}`);
 
   try {
-    const runUrl = `https://api.apify.com/v2/acts/${actorId}/runs?token=${apifyKey}`;
+    const runUrl = `https://api.apify.com/v2/acts/${encodedActorId}/runs?token=${apifyKey}`;
     const runResponse = await fetch(runUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        startUrls: [{ url: `https://www.youtube.com/watch?v=${videoId}` }],
-        maxItems: 1,
-        includeVideoDetails: true,
-        includeChannelDetails: true,
-        maxResults: 1,
-      }),
+      body: JSON.stringify(buildApifyInput(actorId, videoId)),
     });
 
     if (!runResponse.ok) {
@@ -80,7 +128,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
       await new Promise(r => setTimeout(r, 2000));
 
       const statusRes = await fetch(
-        `https://api.apify.com/v2/acts/${actorId}/runs/${runId}?token=${apifyKey}`
+        `https://api.apify.com/v2/actor-runs/${runId}?token=${apifyKey}`
       );
       if (statusRes.ok) {
         runData = await statusRes.json();
