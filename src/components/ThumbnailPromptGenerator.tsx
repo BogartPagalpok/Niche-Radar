@@ -55,13 +55,20 @@ export function ThumbnailPromptGenerator({ video }: ThumbnailPromptGeneratorProp
     // VISION: have GPT-4o look at the REAL thumbnails to capture the true visual
     // style (color, layout, faces, text). This is the biggest accuracy boost.
     if (video.thumbnail_url || channelThumbs.length > 0) {
+      console.log('[Vision] Analyzing source/channel thumbnail style...', {
+        hasSourceThumbnail: !!video.thumbnail_url,
+        channelThumbnailCount: channelThumbs.length,
+      });
       const vision = await analyzeThumbnailStyle(video.thumbnail_url, channelThumbs);
       if (vision.styleAnalysis) {
+        console.log('[Vision] ✅ Thumbnail style lock extracted:', vision.styleAnalysis);
         channelStyle = {
           titles: channelStyle?.titles ?? [],
           thumbnails: channelStyle?.thumbnails ?? [],
           visionStyle: vision.styleAnalysis,
         };
+      } else {
+        console.warn('[Vision] ⚠️ No thumbnail style lock extracted:', vision.error || 'unknown reason');
       }
     }
 
