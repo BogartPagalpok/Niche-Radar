@@ -38,12 +38,24 @@ export async function analyzeThumbnailStyle(
         'You are a YouTube thumbnail VISUAL STYLE FORENSICS analyst. Look at these REAL thumbnails ' +
         '(the first is the target video; the rest are from the same channel). ' +
         'Your job is NOT to make them more cinematic or realistic. Your job is to preserve the exact art direction. ' +
-        'Identify the source medium first: photorealistic, 3D render, anime, flat vector, comic strip, simple 2D cartoon, meme collage, etc. ' +
-        'If the source is cartoon/comic/flat/vector, explicitly say: DO NOT use photorealism, realistic lighting, 3D render, shallow depth of field, or ultra-detailed faces. ' +
-        'Return a reusable STYLE LOCK covering: 1) medium/art style, 2) linework/detail level, 3) color palette & contrast, ' +
-        '4) composition/layout & focal point, 5) face/expression style if any, 6) typography style & placement, ' +
-        '7) background treatment, 8) motifs, and 9) style-negative words to avoid. ' +
-        'Output a concise but strict paragraph an AI image generator can follow to match the source look.',
+        'Identify the source medium first using only what is visible in the reference images. ' +
+        'Do not infer the style from the topic, title, genre, or your own defaults. ' +
+        'If a style trait is not visible, say "not visible" instead of inventing it. ' +
+        'Return a DETAILED SOURCE STYLE DNA CARD, not a generic paragraph. Be specific enough that another image model can clone the visual grammar. ' +
+        'Use this exact structure:\n' +
+        'SOURCE MEDIUM: [observed medium/art style from the image]\n' +
+        'ART DIRECTION: [overall look, era, polish level, whether simple or detailed]\n' +
+        'LINEWORK: [outline thickness, sketchiness, edge sharpness, stroke style]\n' +
+        'SHAPES & CHARACTER DESIGN: [head/body proportions, facial features, eyes, mouth, expressions, anatomy simplification]\n' +
+        'COLOR PALETTE: [dominant colors, approximate hex codes if possible, saturation, contrast]\n' +
+        'LIGHTING/SHADING: [flat colors, cel shading, gradients, realistic light, shadows, or no shading]\n' +
+        'BACKGROUND: [plain/gradient/photo/scene, detail level, texture]\n' +
+        'COMPOSITION: [subject placement, cropping, negative space, scale, visual hierarchy]\n' +
+        'TYPOGRAPHY: [font category, color, outline, shadow, case, size, placement, how much text]\n' +
+        'RECURRING MOTIFS: [props, arrows, charts, maps, faces, icons, etc.]\n' +
+        'DO USE: [prompt phrases that preserve the observed style]\n' +
+        'DO NOT USE: [prompt phrases/styles that would change or contradict the observed source medium, linework, rendering, palette, typography, or composition]\n' +
+        'Do not be vague. Mention exact visual traits visible in the thumbnails and only style negatives that are relevant to the observed source style.',
     },
     ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
   ];
@@ -58,8 +70,8 @@ export async function analyzeThumbnailStyle(
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'user', content }],
-        temperature: 0.3,
-        max_tokens: 400,
+        temperature: 0.2,
+        max_tokens: 1200,
       }),
     });
 
